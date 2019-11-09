@@ -38,20 +38,20 @@ public class Principal {
                 500,"um quarto");
         CasaDAO dao = new CasaDAO();
         casa.setIdCasa(dao.criaCasa(casa));
-//        System.out.println(dao.buscaCasa(casa.getIdCasa()));
-//        casa.setAluguel(800);
-//        dao.atualizaCasa(casa);
-//        System.out.println(dao.buscaCasa(casa.getIdCasa()));
-//        dao.removeCasa(casa.getIdCasa());
-//        System.out.println(dao.buscaCasa(casa.getIdCasa()));
-//
-//        for (Casa c : dao.buscaCasasNome("CASA")){
-//            System.out.println(c);
-//        }
-//        System.out.println("-----------------------------");
-//        for (Casa c : dao.buscaCasasEndereco("rua")){
-//            System.out.println(c);
-//        }
+        System.out.println(dao.buscaCasa(casa.getIdCasa()));
+        casa.setAluguel(800);
+        dao.atualizaCasa(casa);
+        System.out.println(dao.buscaCasa(casa.getIdCasa()));
+        dao.removeCasa(casa.getIdCasa());
+        System.out.println(dao.buscaCasa(casa.getIdCasa()));
+
+        for (Casa c : dao.buscaCasasNome("CASA")){
+            System.out.println(c);
+        }
+        System.out.println("-----------------------------");
+        for (Casa c : dao.buscaCasasEndereco("rua")){
+            System.out.println(c);
+        }
 
     }
 
@@ -227,7 +227,7 @@ public class Principal {
 
         public static void main (String arg []){
             //testaUsuario();
-            testeCasa();
+            //testeCasa();
             //testePagamento();
             //testeTarefa();
             //testeRegra();
@@ -235,6 +235,6 @@ public class Principal {
             //testeConvite();
             //testeAprova();
             //testeUsuarioRotina();
-            //testeComentario();
+            testeComentario();
     }
 }
