@@ -20,6 +20,7 @@ repositories {
 
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
+    compile group: 'mysql', name: 'mysql-connector-java', version: '8.0.18'
     compile group: 'org.glassfish.jersey.containers', name: 'jersey-container-servlet', version: '2.28'
     compile group: 'org.glassfish.jersey.inject', name: 'jersey-hk2', version: '2.28'
     compile group: 'org.glassfish.jersey.media', name: 'jersey-media-json-jackson', version: '2.28'
