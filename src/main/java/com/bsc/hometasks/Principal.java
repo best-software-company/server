@@ -14,22 +14,22 @@ public class Principal {
         dao.criaUsuario(usuario);
         System.out.println(dao.buscaUsuario("Roque017"));
 
-        usuario.setGenero("femininno");
+        usuario.setGenero("feminino");
         usuario.setIdUsuario("Roque017");
         System.out.println(dao.atualizaUsuario(usuario));
-        System.out.println(dao.buscaUsuario("Roque017"));
-        System.out.println(dao.removeUsuario("Roque017"));
-        System.out.println(dao.buscaUsuario("Roque017"));
-
-        for(Usuario u : dao.buscaUsuariosId("Roque")){
-            System.out.println(u);
-        }
-
-        System.out.println("-----------------------------");
-
-        for(Usuario u : dao.buscaUsuariosNome("Gui")){
-            System.out.println(u);
-        }
+//        System.out.println(dao.buscaUsuario("Roque017"));
+//        System.out.println(dao.removeUsuario("Roque017"));
+//        System.out.println(dao.buscaUsuario("Roque017"));
+//
+//        for(Usuario u : dao.buscaUsuariosId("Roque")){
+//            System.out.println(u);
+//        }
+//
+//        System.out.println("-----------------------------");
+//
+//        for(Usuario u : dao.buscaUsuariosNome("Gui")){
+//            System.out.println(u);
+//        }
 
     }
 
@@ -226,7 +226,7 @@ public class Principal {
     }
 
         public static void main (String arg []){
-            //testaUsuario();
+            testaUsuario();
             //testeCasa();
             //testePagamento();
             //testeTarefa();
@@ -235,6 +235,6 @@ public class Principal {
             //testeConvite();
             //testeAprova();
             //testeUsuarioRotina();
-            testeComentario();
+            //testeComentario();
     }
 }
