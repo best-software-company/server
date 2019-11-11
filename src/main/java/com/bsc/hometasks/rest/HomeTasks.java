@@ -14,59 +14,93 @@ import java.util.List;
 @Path("/")
 public class HomeTasks {
     Boolean token = false;
-    Usuario user = new Usuario();
-    Usuario user2 = new Usuario();
+    UsuarioDAO user = new UsuarioDAO();
 
     @Path("/login/{credenciais}")
     @GET
     @Produces(MediaType.APPLICATION_JSON )
-    public Response index(@PathParam("credenciais") String credenciais) {
+    public Response login(@PathParam("credenciais") String credenciais) {
         String log[] = credenciais.split(":");
-        UsuarioDAO user = new UsuarioDAO();
+
         Usuario buscarUser = null;
         if(log.length==2){
             buscarUser = user.buscaUsuario(log[0]);
-            if(buscarUser.getSenha()==log[1]){
-                token = true;
-                return Response.ok(buscarUser).build();
+            if( buscarUser!= null){
+                if(buscarUser.getSenha()==log[1]){
+                    token = true;
+                    return Response.status(Response.Status.OK).entity("{\n" +
+                            "    \"token\": \"true\"\n" +
+                            "}").build();
+                }
             }
         }
         return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
-                "    \"error\": \"Usuário não encontrado\"\n" +
+                "    \"error\": \"Usuário ou Senha inválidos ou inexistente\"\n" +
+                "}").build();
+
+    }
+    @Path("/users/{newUser}")
+    @POST
+    @Produces({MediaType.APPLICATION_JSON})
+    @Consumes({MediaType.APPLICATION_JSON})
+    public Response addUser(Usuario newUser, @Context UriInfo uriInfo) {
+        UsuarioDAO user = new UsuarioDAO();
+        if(newUser.getNome()!=null & newUser.getIdUsuario()!=null & newUser.getSenha()!=null){
+            if(user.buscaUsuariosId(newUser.getIdUsuario())!=null){
+                return Response.status(Response.Status.CONFLICT).entity("{\n" +
+                        "    \"error\": \"\"Login já existe\"\n" +
+                        "}").build();
+            }
+
+            if(user.criaUsuario(newUser)){
+                return Response.status(Response.Status.CREATED).entity(newUser).build();
+            }
+        }
+
+        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                "    \"error\": \"\"Atributos Obrigatórios - full_name, cpf, login e password\"\n" +
                 "}").build();
 
     }
 
-    @Path("/users")
+    @Path("/users/{nome}")
     @GET
     @Produces(MediaType.APPLICATION_JSON )
-    public Response index() {
+    public Response searchUsers(@PathParam("nome") String nome) {
         if(token==true){
-            user.setNome("Luiza");
-            user.setEmail("l.uhzinha@hotmail.com");
-            user.setIdUsuario("1");
-            List<Usuario> users = new ArrayList<>();
-            users.add(user);
-            user2.setNome("Felipe");
-            user2.setEmail("fpcardoso@hotmail.com");
-            user2.setIdUsuario("2");
-            users.add(user2);
-            return Response.ok(users).build();
+            List<Usuario> users = user.buscaUsuariosId(nome);
+            if(users!=null) return Response.ok(users).build();
+            else return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                    "    \"error\": \"Nenhum usuário encontrado\"\n" +
+                    "}").build();
         }
         return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
-                "    \"error\": \"Permissão Negada\"\n" +
+                "    \"error\": \"Autenticação Necessária\"\n" +
                 "}").build();
     }
 
-    @Path("/users/{name}")
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getCampus(@PathParam("name") String name) {
-        String teste = "Busca por " + name;
-        if (name != null) {
+    /*@Path("/users/{updateUser}")
+    @PUT
+    @Produces({MediaType.APPLICATION_JSON})
+    @Consumes({MediaType.APPLICATION_JSON})
+    public Response updateUser(Usuario updateUser, @Context UriInfo uriInfo) {
+        UsuarioDAO user = new UsuarioDAO();
+        if(updateUser.getNome()!=null & newUser.getIdUsuario()!=null & newUser.getSenha()!=null){
+            if(user.buscaUsuariosId(newUser.getIdUsuario())!=null){
+                return Response.status(Response.Status.CONFLICT).entity("{\n" +
+                        "    \"error\": \"\"Login já existe\"\n" +
+                        "}").build();
+            }
 
-            return Response.ok(teste).build();
+            if(user.criaUsuario(newUser)){
+                return Response.status(Response.Status.CREATED).entity(newUser).build();
+            }
         }
-        throw new NotFoundException();
-    }
+
+        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                "    \"error\": \"\"Atributos Obrigatórios - full_name, cpf, login e password\"\n" +
+                "}").build();
+
+    }*/
+
 }

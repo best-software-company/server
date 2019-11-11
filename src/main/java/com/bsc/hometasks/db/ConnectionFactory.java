@@ -34,8 +34,8 @@ public abstract class ConnectionFactory {
         properties.setProperty("password", "d&v1029homeT@$K");
         properties.setProperty("useSSL", "false");
 
-        String host = "34.95.197.131";
-        String port = "42000";
+        String host = "35.247.234.136";
+        String port = "3306";
         String dbname = "dev_hometasks";
 
         String url = "jdbc:mysql://" + host + ":" + port + "/" + dbname;
