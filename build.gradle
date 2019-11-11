@@ -26,6 +26,7 @@ dependencies {
     compile group: 'org.glassfish.jersey.media', name: 'jersey-media-json-jackson', version: '2.28'
     compile group: 'org.glassfish.jersey.media', name: 'jersey-media-multipart', version: '2.28'
     compile group: 'org.glassfish.jersey.media', name: 'jersey-media-json-processing', version: '2.28'
+    implementation 'com.google.code.gson:gson:2.8.6'
 }
 
 gretty {

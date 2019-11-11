@@ -23,7 +23,7 @@
     &quot;error&quot;: &quot;Permissão Negada&quot;
 }
 </code></pre>
-  <p>Endpoint Geral: <code>/api/v1/hometasks</code></p>
+  <p>Endpoint Geral: <code>/hometasks/api/v1</code></p>
   <h2 id="1-usu-rio">1. Usuário</h2>
   <p>Gerenciar informações sobre o usuário e verificar informações dos demais usuários.</p>
   <p>Endpoint: <strong><code>/users</code></strong></p>
