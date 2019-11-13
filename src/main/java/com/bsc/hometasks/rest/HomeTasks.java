@@ -25,13 +25,14 @@ public class HomeTasks {
     @GET
     @Produces(MediaType.APPLICATION_JSON )
     public Response login(@PathParam("credenciais") String credenciais) {
+
         String log[] = credenciais.split(":");
         UsuarioDAO user = new UsuarioDAO();
         Usuario buscarUser = new Usuario();
 
         if(log.length==2){
             buscarUser = user.buscaUsuario(log[0]);
-            if( !buscarUser.equals(null)){
+            if( buscarUser!=null){
                 if(buscarUser.getSenha().equals(log[1])){
                     return Response.status(Response.Status.OK).entity("{\n" +
                             "    \"token\": \"true\"\n" +
@@ -89,26 +90,26 @@ public class HomeTasks {
                 "}").build();
     }
 
-    //nao esta funcionando
+    //testado
     @Path("/users")
     @PUT
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
-    public Response updateUser(Usuario updateUser, @Context UriInfo uriInfo) {
+    public Response updateUser(Usuario updateUser, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
         UsuarioDAO user = new UsuarioDAO();
-        Usuario upUser = user.buscaUsuario(updateUser.getIdUsuario());
-
-        if(upUser!=null){
-            user.atualizaUsuario(upUser);
-            return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
-                    "    \"error\": \"\"Usuário atualizado com sucesso.\"\n" +
+        if(token.equals("true")){
+            if(user.atualizaUsuario(updateUser)  > 0){
+                return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
+                        "    \"error\": \"\"Usuário atualizado com sucesso.\"\n" +
+                        "}").build();
+            }
+            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                    "    \"error\": \"\"Usuário não encontrado.\"\n" +
                     "}").build();
         }
-
-        return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
-                "    \"error\": \"\"Usuário não encontrado.\"\n" +
+        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                "    \"error\": \"Autenticação Necessária\"\n" +
                 "}").build();
-
     }
 
     @Path("/tasks/{idEstado}")

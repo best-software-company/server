@@ -41,8 +41,14 @@ public class UsuarioDAO {
 
 
 	public int atualizaUsuario(Usuario usuario) {
-		String sql = "update Usuario set data = ?, genero = ?, pontos = ?, perfil = ?, nome = ?," +
-				"telefone = ?, senha = ?, email = ?, idCasa = ? where idUsuario = ?";
+		String sql;
+		if (usuario.getIdCasa() >0){
+			sql = "update Usuario set data = ?, genero = ?, pontos = ?, perfil = ?, nome = ?," +
+					"telefone = ?, senha = ?, email = ?, idCasa = ? where idUsuario = ?";
+		}else {
+			sql = "update Usuario set data = ?, genero = ?, pontos = ?, perfil = ?, nome = ?," +
+					"telefone = ?, senha = ?, email = ? where idUsuario = ?";
+		}
 		int rows = 0;
 		try (Connection conexao = ConnectionFactory.getDBConnection();
 			 PreparedStatement stmt = conexao.prepareStatement(sql)) {
@@ -55,8 +61,12 @@ public class UsuarioDAO {
 			stmt.setString(6, usuario.getTelefone());
 			stmt.setString(7, usuario.getSenha());
 			stmt.setString(8, usuario.getEmail());
-			stmt.setInt(9,usuario.getIdCasa());
-			stmt.setString(10, usuario.getIdUsuario());
+			if(usuario.getIdCasa() >0){
+				stmt.setInt(9,usuario.getIdCasa());
+				stmt.setString(10, usuario.getIdUsuario());
+			}else {
+				stmt.setString(9, usuario.getIdUsuario());
+			}
 
 			rows = stmt.executeUpdate();
 
