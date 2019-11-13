@@ -78,7 +78,7 @@ public class HomeTasks {
     @GET
     @Produces(MediaType.APPLICATION_JSON )
     public Response searchUsers(@PathParam("nome") String nome, @HeaderParam("token") String token) {
-        if(token.equals("true")){
+        if(token.compareTo("true")==0){
             List<Usuario> users = user.buscaUsuariosId(nome);
             if(users!=null) return Response.ok(users).build();
             else return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
@@ -97,10 +97,10 @@ public class HomeTasks {
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     public Response updateUser(Usuario updateUser, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
         UsuarioDAO user = new UsuarioDAO();
-        if(token.equals("true")){
+        if(token.compareTo("true")==0){
             if(user.atualizaUsuario(updateUser)  > 0){
                 return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
-                        "    \"error\": \"\"Usuário atualizado com sucesso.\"\n" +
+                        "    \"resposta\": \"\"Usuário atualizado com sucesso.\"\n" +
                         "}").build();
             }
             return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
@@ -112,15 +112,16 @@ public class HomeTasks {
                 "}").build();
     }
 
+    //testado
     @Path("/tasks/{idEstado}")
     @GET
     @Produces(MediaType.APPLICATION_JSON )
-    public Response searchTasks(String idEstado, @HeaderParam("token") String token) {
+    public Response searchTasks(@PathParam("idEstado") String idEstado, @HeaderParam("token") String token) {
         String log[] = idEstado.split(":");
-        if(token.equals("true")){
+        if(token.compareTo("true")==0){
             List<Tarefa> tarefas = tarefa.buscaTarefasUsuarioEstado(log[0],log[1]);
             if(tarefas.size()>=0) return Response.status(Response.Status.OK).entity(tarefas).build();
-            else return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
                     "    \"error\": \"Nenhuma tarefa encontrada\"\n" +
                     "}").build();
         }
@@ -129,20 +130,23 @@ public class HomeTasks {
                 "}").build();
     }
 
+    //testado
     //de alguma forma, cria todos os jsons e caso o usuario nao preencha volta uma string vazia
     @Path("/tasks")
     @POST
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     public Response addUser(Tarefa newTarefa, @Context UriInfo uriInfo,@HeaderParam("token") String token) {
-        if(token.equals("true")){
+        if(token.compareTo("true")==0){
             System.out.println(newTarefa);
             int count = verificaCamposT(newTarefa);
-            if(count>=7) {
-                int id = tarefa.criaTarefa(newTarefa);
-                if (id > 0) {
-                    return Response.status(Response.Status.CREATED).entity(tarefa.buscaTarefa(id)).build();
+            if(count==6) {
+                if (tarefa.criaTarefa(newTarefa) > 0) {
+                    return Response.status(Response.Status.CREATED).entity(tarefa.buscaTarefa(tarefa.criaTarefa(newTarefa))).build();
                 }
+                return Response.status(Response.Status.CONFLICT).entity("{\n" +
+                        "    \"error\": \"\"Não foi possível criar a tarefa.\"\n" +
+                        "}").build();
             }
 
             return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
@@ -155,21 +159,18 @@ public class HomeTasks {
 
     }
 
+    //testado mas nao retorna nada
     @Path("/tasks")
     @PUT
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     public Response updateTasks(Tarefa updateTarefa, @Context UriInfo uriInfo,@HeaderParam("token") String token) {
-        if(token.equals("true")){
-            Tarefa upTarefa = tarefa.buscaTarefa(updateTarefa.getIdTarefa());
-
-            if(upTarefa!=null){
-                tarefa.atualizaTarefa(upTarefa);
+        if(token.compareTo("true")==0) {
+            if(tarefa.atualizaTarefa(updateTarefa)  > 0){
                 return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
-                        "    \"error\": \"\"Tarefa atualizado com sucesso.\"\n" +
+                        "    \"resposta\": \"Tarefa realizada com sucesso\"\n" +
                         "}").build();
             }
-
             return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
                     "    \"error\": \"\"Tarefa não encontrada.\"\n" +
                     "}").build();
@@ -178,6 +179,7 @@ public class HomeTasks {
                 "    \"error\": \"Autenticação Necessária\"\n" +
                 "}").build();
     }
+
 
     @Path("/routines/{idUsuario}")
     @GET
@@ -196,7 +198,7 @@ public class HomeTasks {
                 "}").build();
     }
 
-    //de alguma forma, cria todos os jsons e caso o usuario nao preencha volta uma string vazia
+    /*//de alguma forma, cria todos os jsons e caso o usuario nao preencha volta uma string vazia
     @Path("/routines")
     @POST
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
@@ -243,7 +245,7 @@ public class HomeTasks {
         return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
                 "    \"error\": \"Autenticação Necessária\"\n" +
                 "}").build();
-    }
+    }*/
 
 
     int verificaCampos(Usuario newUser){
@@ -266,7 +268,7 @@ public class HomeTasks {
         if (newTarefa.getNome().length()!=0) count++;
         if (newTarefa.getDescricao().length()!=0) count++;
         if (newTarefa.getData().length()!=0) count++;
-        if (newTarefa.getValor()!=0) count++;
+        //if (newTarefa.getValor()!=0) count++;
         if (newTarefa.getIdRelator().length()!=0) count++;
         if (newTarefa.getIdResponsavel().length()!=0) count++;
         if (newTarefa.getEstado().length()!=0) count++;

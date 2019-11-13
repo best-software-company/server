@@ -24,8 +24,10 @@ public class Tarefa {
 		this.valor = valor;
 	}
 
+    public Tarefa() {
+    }
 
-	public Tarefa(String nome, String descricao, String idResponsavel, String idRelator, String estado, String data, int valor) {
+    public Tarefa(String nome, String descricao, String idResponsavel, String idRelator, String estado, String data, int valor) {
 		this.nome = nome;
 		this.descricao = descricao;
 		this.idResponsavel = idResponsavel;
