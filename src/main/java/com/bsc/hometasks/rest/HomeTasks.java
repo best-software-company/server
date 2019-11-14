@@ -1,8 +1,10 @@
 package com.bsc.hometasks.rest;
 
+import com.bsc.hometasks.db.dao.CasaDAO;
 import com.bsc.hometasks.db.dao.RotinaDAO;
 import com.bsc.hometasks.db.dao.TarefaDAO;
 import com.bsc.hometasks.db.dao.UsuarioDAO;
+import com.bsc.hometasks.pojo.Casa;
 import com.bsc.hometasks.pojo.Rotina;
 import com.bsc.hometasks.pojo.Tarefa;
 import com.bsc.hometasks.pojo.Usuario;
@@ -19,6 +21,7 @@ public class HomeTasks {
     UsuarioDAO user = new UsuarioDAO();
     TarefaDAO tarefa = new TarefaDAO();
     RotinaDAO rotina = new RotinaDAO();
+    CasaDAO casa = new CasaDAO();
 
     //testado
     @Path("/login/{credenciais}")
@@ -187,9 +190,7 @@ public class HomeTasks {
     public Response searchRoutines(@PathParam("idUsuario") String idUsuario, @HeaderParam("token") String token) {
 
         if(token.compareTo("true")==0){
-            System.out.println(idUsuario);
             List<Rotina> rotinas = rotina.buscaRotinasUsuario(idUsuario);
-            rotinas.forEach(rotina1 -> System.out.println(rotina1));
             if(rotinas.size()>0)
                 return Response.status(Response.Status.OK).entity(rotinas).build();
 
@@ -219,7 +220,6 @@ public class HomeTasks {
                         "    \"error\": \"\"Rotina não pode ser criada\"\n" +
                         "}").build();
             }
-
             return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
                     "    \"error\": \"\"Atributos Obrigatórios - Nome e validade\"\n" +
                     "}").build();
@@ -227,7 +227,6 @@ public class HomeTasks {
         return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
                 "    \"error\": \"Autenticação Necessária\"\n" +
                 "}").build();
-
     }
 
     //testada
@@ -244,6 +243,72 @@ public class HomeTasks {
             }
             return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
                     "    \"error\": \"\"Rotina não encontrada.\"\n" +
+                    "}").build();
+        }
+        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                "    \"error\": \"Autenticação Necessária\"\n" +
+                "}").build();
+    }
+
+    //testada
+    @Path("/home/{name_home}")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON )
+    public Response searchHome(@PathParam("name_home") int name_home, @HeaderParam("token") String token) {
+
+        if(token.compareTo("true")==0){
+
+            if(casa.buscaCasa(name_home)!=null)
+                return Response.status(Response.Status.OK).entity(casa.buscaCasa(name_home)).build();
+
+            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                    "    \"error\": \"Nenhuma casa encontrada\"\n" +
+                    "}").build();
+        }
+        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                "    \"error\": \"Autenticação Necessária\"\n" +
+                "}").build();
+    }
+
+    //testada
+    @Path("/home")
+    @POST
+    @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
+    @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
+    public Response addHome(Casa newCasa, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
+        if(token.compareTo("true")==0){
+            int count = verificaCamposC(newCasa);
+            if(count==4) {
+                if (casa.criaCasa(newCasa) > 0) {
+                    return Response.status(Response.Status.CREATED).entity(casa.buscaCasa(casa.criaCasa(newCasa))).build();
+                }
+                return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                        "    \"resposta\": \"\"Casa não pode ser criada\"\n" +
+                        "}").build();
+            }
+            return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                    "    \"error\": \"\"Atributos Obrigatórios - Nome, descrição, aluguel e endereço\"\n" +
+                    "}").build();
+        }
+        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                "    \"error\": \"Autenticação Necessária\"\n" +
+                "}").build();
+    }
+
+    //testada
+    @Path("/home")
+    @PUT
+    @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
+    @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
+    public Response updateRoutines(Casa updateCasa, @Context UriInfo uriInfo,@HeaderParam("token") String token) {
+        if(token.compareTo("true")==0){
+            if(casa.atualizaCasa(updateCasa)>0){
+                return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
+                        "    \"resposta\": \"\"Casa atualizada com sucesso.\"\n" +
+                        "}").build();
+            }
+            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                    "    \"error\": \"\"Casa não encontrada.\"\n" +
                     "}").build();
         }
         return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
@@ -284,6 +349,15 @@ public class HomeTasks {
         if (newRotina.getIdRotina()!=0) count++;
         if (newRotina.getValidade().length()!=0) count++;
 
+        return count;
+    }
+    int verificaCamposC(Casa newCasa){
+        int count = 0;
+        //ve se ele preencheu todas as paradas
+        if (newCasa.getNome().length()!=0) count++;
+        if (newCasa.getAluguel()!=0) count++;
+        if(newCasa.getDescricao().length()!=0) count++;
+        if(newCasa.getEndereco().length()!=0) count++;
         return count;
     }
 
