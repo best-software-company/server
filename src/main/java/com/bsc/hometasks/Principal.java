@@ -3,6 +3,8 @@ package com.bsc.hometasks;
 import com.bsc.hometasks.db.dao.*;
 import com.bsc.hometasks.pojo.*;
 
+import java.util.List;
+
 public class Principal {
     private static void testaUsuario(){
 
@@ -120,19 +122,17 @@ public class Principal {
     }
 
     public static void testeRotina(){
-        Rotina rotina = new Rotina(1,"1977-02-02",false);
         RotinaDAO dao = new RotinaDAO();
+        Rotina rotina = dao.buscaRotina(3);
 
-        dao.criaRotina(rotina);
-        System.out.println(dao.buscaRotina(rotina.getIdRotina()));
-        rotina.setValidade("2000-02-02");
-        dao.atualizaRotina(rotina);
         System.out.println(dao.buscaRotina(rotina.getIdRotina()));
         //dao.removeRotina(rotina.getIdRotina());
-        System.out.println(dao.buscaRotina(rotina.getIdRotina()));
+        //System.out.println(dao.buscaRotina(rotina.getIdRotina()));
 
         System.out.println("-----------------");
-        for (Rotina r : dao.buscaRotinasUsuario("Roque0")){
+        List<Rotina> rotinas = dao.buscaRotinasUsuario("luluzinha");
+        System.out.println("size" + rotinas.size());
+        for (Rotina r : rotinas){
             System.out.println(r);
         }
 
@@ -231,10 +231,10 @@ public class Principal {
             //testePagamento();
             //testeTarefa();
             //testeRegra();
-            //testeRotina();
+            testeRotina();
             //testeConvite();
             //testeAprova();
             //testeUsuarioRotina();
-            testeComentario();
+            //testeComentario();
     }
 }

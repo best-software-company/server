@@ -180,16 +180,20 @@ public class HomeTasks {
                 "}").build();
     }
 
-
+    //testada
     @Path("/routines/{idUsuario}")
     @GET
     @Produces(MediaType.APPLICATION_JSON )
-    public Response searchRoutines(String idUsuario, @HeaderParam("token") String token) {
+    public Response searchRoutines(@PathParam("idUsuario") String idUsuario, @HeaderParam("token") String token) {
 
-        if(token.equals("true")){
+        if(token.compareTo("true")==0){
+            System.out.println(idUsuario);
             List<Rotina> rotinas = rotina.buscaRotinasUsuario(idUsuario);
-            if(rotinas.size()>=0) return Response.status(Response.Status.OK).entity(rotinas).build();
-            else return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+            rotinas.forEach(rotina1 -> System.out.println(rotina1));
+            if(rotinas.size()>0)
+                return Response.status(Response.Status.OK).entity(rotinas).build();
+
+            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
                     "    \"error\": \"Nenhuma rotina encontrada\"\n" +
                     "}").build();
         }
@@ -198,19 +202,22 @@ public class HomeTasks {
                 "}").build();
     }
 
-    /*//de alguma forma, cria todos os jsons e caso o usuario nao preencha volta uma string vazia
+    //testada
+    ///de alguma forma, cria todos os jsons e caso o usuario nao preencha volta uma string vazia
     @Path("/routines")
     @POST
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     public Response addRoutines(Rotina newRotina, @Context UriInfo uriInfo,@HeaderParam("token") String token) {
-        if(token.equals("true")){
+        if(token.compareTo("true")==0){
             int count = verificaCamposR(newRotina);
-            if(count>=2) {
-                int id = rotina.criaRotina(newRotina);
-                if (id > 0) {
-                    return Response.status(Response.Status.CREATED).entity(rotina.buscaRotina(id)).build();
+            if(count==2) {
+                if (rotina.criaRotina(newRotina) > 0) {
+                    return Response.status(Response.Status.CREATED).entity(rotina.buscaRotina(rotina.criaRotina(newRotina))).build();
                 }
+                return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                        "    \"error\": \"\"Rotina não pode ser criada\"\n" +
+                        "}").build();
             }
 
             return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
@@ -223,21 +230,18 @@ public class HomeTasks {
 
     }
 
+    //testada
     @Path("/routines")
     @PUT
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     public Response updateRoutines(Rotina updateRotina, @Context UriInfo uriInfo,@HeaderParam("token") String token) {
-        if(token.equals("true")){
-            Rotina upRotina = rotina.buscaRotina(updateRotina.getIdRotina());
-
-            if(upRotina!=null){
-                rotina.atualizaRotina(upRotina);
+        if(token.compareTo("true")==0){
+            if(rotina.atualizaRotina(updateRotina)>0){
                 return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
-                        "    \"error\": \"\"Rotina atualizada com sucesso.\"\n" +
+                        "    \"resposta\": \"\"Rotina atualizada com sucesso.\"\n" +
                         "}").build();
             }
-
             return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
                     "    \"error\": \"\"Rotina não encontrada.\"\n" +
                     "}").build();
@@ -245,7 +249,7 @@ public class HomeTasks {
         return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
                 "    \"error\": \"Autenticação Necessária\"\n" +
                 "}").build();
-    }*/
+    }
 
 
     int verificaCampos(Usuario newUser){
@@ -279,6 +283,7 @@ public class HomeTasks {
         //ve se ele preencheu todas as paradas
         if (newRotina.getIdRotina()!=0) count++;
         if (newRotina.getValidade().length()!=0) count++;
+
         return count;
     }
 

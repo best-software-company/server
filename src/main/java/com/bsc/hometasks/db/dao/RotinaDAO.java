@@ -99,7 +99,7 @@ public class RotinaDAO {
 		List<Rotina> rotinas = new ArrayList<>();
 
 		TarefaDAO dao = new TarefaDAO();
-		List<Tarefa> tarefas = dao.buscaTarefasUsuarioEstado("Roque007","aberta");
+		List<Tarefa> tarefas = dao.buscaTarefasUsuarioEstado(idUsuario,"aberta");
 		for (Tarefa t : tarefas){
 			String sql = "select * from  Rotina where idRotina = ?";
 			try (Connection conexao = ConnectionFactory.getDBConnection();

@@ -8,6 +8,9 @@ public class Rotina {
 	String validade;
 	boolean alternar;
 
+	public Rotina() {
+	}
+
 	public Rotina(int idRotina, String validade, boolean alternar) {
 		this.idRotina = idRotina;
 		this.validade = validade;
