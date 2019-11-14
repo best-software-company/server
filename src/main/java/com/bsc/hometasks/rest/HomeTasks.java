@@ -1,13 +1,7 @@
 package com.bsc.hometasks.rest;
 
-import com.bsc.hometasks.db.dao.CasaDAO;
-import com.bsc.hometasks.db.dao.RotinaDAO;
-import com.bsc.hometasks.db.dao.TarefaDAO;
-import com.bsc.hometasks.db.dao.UsuarioDAO;
-import com.bsc.hometasks.pojo.Casa;
-import com.bsc.hometasks.pojo.Rotina;
-import com.bsc.hometasks.pojo.Tarefa;
-import com.bsc.hometasks.pojo.Usuario;
+import com.bsc.hometasks.db.dao.*;
+import com.bsc.hometasks.pojo.*;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
@@ -22,6 +16,8 @@ public class HomeTasks {
     TarefaDAO tarefa = new TarefaDAO();
     RotinaDAO rotina = new RotinaDAO();
     CasaDAO casa = new CasaDAO();
+    PagamentoDAO pagamento = new PagamentoDAO();
+    RegraDAO regra = new RegraDAO();
 
     //testado
     @Path("/login/{credenciais}")
@@ -38,13 +34,13 @@ public class HomeTasks {
             if( buscarUser!=null){
                 if(buscarUser.getSenha().equals(log[1])){
                     return Response.status(Response.Status.OK).entity("{\n" +
-                            "    \"token\": \"true\"\n" +
+                            " \"token\": \"true\"\n" +
                             "}").build();
                 }
             }
         }
         return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
-                "    \"error\": \"Usuário ou Senha inválidos ou inexistente\"\n" +
+                " \"error\": \"Usuário ou Senha inválidos ou inexistente\"\n" +
                 "}").build();
 
     }
@@ -60,7 +56,7 @@ public class HomeTasks {
         if(count>=8){
             if(user.buscaUsuariosId(newUser.getIdUsuario()).size()>0){
                 return Response.status(Response.Status.CONFLICT).entity("{\n" +
-                        "    \"error\": \"\"Login já existe\"\n" +
+                        " \"error\": \"\"Login já existe\"\n" +
                         "}").build();
             }
 
@@ -71,7 +67,7 @@ public class HomeTasks {
         }
 
         return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
-                "    \"error\": \"\"Atributos Obrigatórios - Login, nome, senha, data, genero, perfil, telefone e email\"\n" +
+                " \"error\": \"\"Atributos Obrigatórios - Login, nome, senha, data, genero, perfil, telefone e email\"\n" +
                 "}").build();
 
     }
@@ -85,11 +81,11 @@ public class HomeTasks {
             List<Usuario> users = user.buscaUsuariosId(nome);
             if(users!=null) return Response.ok(users).build();
             else return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
-                    "    \"error\": \"Nenhum usuário encontrado\"\n" +
+                    " \"error\": \"Nenhum usuário encontrado\"\n" +
                     "}").build();
         }
         return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
-                "    \"error\": \"Autenticação Necessária\"\n" +
+                " \"error\": \"Autenticação Necessária\"\n" +
                 "}").build();
     }
 
@@ -141,7 +137,6 @@ public class HomeTasks {
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     public Response addUser(Tarefa newTarefa, @Context UriInfo uriInfo,@HeaderParam("token") String token) {
         if(token.compareTo("true")==0){
-            System.out.println(newTarefa);
             int count = verificaCamposT(newTarefa);
             if(count==6) {
                 if (tarefa.criaTarefa(newTarefa) > 0) {
@@ -304,7 +299,7 @@ public class HomeTasks {
         if(token.compareTo("true")==0){
             if(casa.atualizaCasa(updateCasa)>0){
                 return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
-                        "    \"resposta\": \"\"Casa atualizada com sucesso.\"\n" +
+                        " \"resposta\": \"Casa atualizada com sucesso.\"\n" +
                         "}").build();
             }
             return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
@@ -316,6 +311,133 @@ public class HomeTasks {
                 "}").build();
     }
 
+    @Path("/account/{pagCredDev}")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON )
+    public Response searchConta(@PathParam("pagCredDev") String pagCredDev, @HeaderParam("token") String token) {
+        String log[] = pagCredDev.split(":");
+        if(token.compareTo("true")==0){
+            ;
+            if(pagamento.buscaPagamento(Integer.parseInt(log[0]),log[1],log[2])!=null)
+                return Response.status(Response.Status.OK).entity(pagamento.buscaPagamento(Integer.parseInt(log[0]),log[1],log[2])).build();
+
+            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                    "    \"error\": \"Nenhum pagamento encontrado\"\n" +
+                    "}").build();
+        }
+        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                "    \"error\": \"Autenticação Necessária\"\n" +
+                "}").build();
+    }
+
+    @Path("/account")
+    @POST
+    @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
+    @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
+    public Response addAccount(Pagamento newPagamento, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
+
+        if(token.compareTo("true")==0){
+            int count = verificaCamposP(newPagamento);
+            if(count==3) {
+                if (pagamento.criaPagamento(newPagamento) > 0) {
+                    return Response.status(Response.Status.CREATED).entity(pagamento.buscaPagamento(newPagamento.getIdPagamento(),newPagamento.getIdCredor(),newPagamento.getIdDevedor())).build();
+                }
+                return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                        "    \"resposta\": \"\"Pagamento não pode ser criado\"\n" +
+                        "}").build();
+            }
+            return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                    "    \"error\": \"\"Atributos Obrigatórios - IdPagamento, IdCredor e IdDevedor\"\n" +
+                    "}").build();
+        }
+        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                "    \"error\": \"Autenticação Necessária\"\n" +
+                "}").build();
+    }
+
+    @Path("/account")
+    @PUT
+    @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
+    @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
+    public Response updateAccount(Pagamento updatepag, @Context UriInfo uriInfo,@HeaderParam("token") String token) {
+        if(token.compareTo("true")==0){
+            if(pagamento.atualizaPagamento(updatepag)>0){
+                return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
+                        "    \"resposta\": \"\"Pagamento atualizado com sucesso.\"\n" +
+                        "}").build();
+            }
+            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                    "    \"error\": \"\"Pagamento não encontrado.\"\n" +
+                    "}").build();
+        }
+        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                "    \"error\": \"Autenticação Necessária\"\n" +
+                "}").build();
+    }
+
+    @Path("/rules/{idRegraCasa}")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON )
+    public Response searchRules(@PathParam("idRegraCasa") String idRegraCasa, @HeaderParam("token") String token) {
+        if(token.compareTo("true")==0){
+            String log[] = idRegraCasa.split(":");
+
+            if(regra.buscaRegra(Integer.parseInt(log[0]),Integer.parseInt(log[1]))!=null)
+                return Response.status(Response.Status.OK).entity(regra.buscaRegra(Integer.parseInt(log[0]),Integer.parseInt(log[1]))).build();
+
+            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                    "    \"error\": \"Nenhuma regra encontrada\"\n" +
+                    "}").build();
+        }
+        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                "    \"error\": \"Autenticação Necessária\"\n" +
+                "}").build();
+    }
+
+    @Path("/rules")
+    @POST
+    @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
+    @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
+    public Response addRule(Regra newRegra, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
+
+        if(token.compareTo("true")==0){
+            int count = verificaCamposRules(newRegra);
+            if(count==5) {
+                if (regra.criaRegra(newRegra)> 0) {
+                    return Response.status(Response.Status.CREATED).entity(newRegra).build();
+                }
+                return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                        "    \"resposta\": \"\"Regra não pode ser criado\"\n" +
+                        "}").build();
+            }
+            return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                    "    \"error\": \"\"Atributos Obrigatórios faltando\"\n" +
+                    "}").build();
+        }
+        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                "    \"error\": \"Autenticação Necessária\"\n" +
+                "}").build();
+    }
+
+    @Path("/rules")
+    @PUT
+    @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
+    @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
+    public Response updateAccount(Regra updateReg, @Context UriInfo uriInfo,@HeaderParam("token") String token) {
+        if(token.compareTo("true")==0){
+            if(regra.atualizaRegra(updateReg)>0){
+                return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
+                        "    \"resposta\": \"\"Regra atualizada com sucesso.\"\n" +
+                        "}").build();
+            }
+            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                    "    \"error\": \"\"Regra não encontrada.\"\n" +
+                    "}").build();
+        }
+        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                "    \"error\": \"Autenticação Necessária\"\n" +
+                "}").build();
+    }
 
     int verificaCampos(Usuario newUser){
         int count = 0;
@@ -358,6 +480,24 @@ public class HomeTasks {
         if (newCasa.getAluguel()!=0) count++;
         if(newCasa.getDescricao().length()!=0) count++;
         if(newCasa.getEndereco().length()!=0) count++;
+        return count;
+    }
+    int verificaCamposP(Pagamento newPagamento){
+        int count = 0;
+        //ve se ele preencheu todas as paradas
+        if (newPagamento.getData()!=null) count++;
+        if (newPagamento.getIdCredor().length()!=0) count++;
+        if(newPagamento.getIdDevedor().length()!=0) count++;
+
+        return count;
+    }
+    int verificaCamposRules(Regra newRegra){
+        int count = 0;
+        if(newRegra.getDescricao().length()!=0) count++;
+        if(newRegra.getIdUsuario().length()!=0) count++;
+        if(newRegra.getIdCasa()!=0) count++;
+        if(newRegra.getData().length()!=0) count++;
+        if(newRegra.getNome().length()!=0) count++;
         return count;
     }
 

@@ -13,6 +13,9 @@ public class Regra {
 	private String data;
 	private int valor;
 
+	public Regra() {
+	}
+
 	public Regra(int idRegra, String nome, String descricao, boolean estado, String idUsuario, int idCasa, String data, int valor) {
 		this.idRegra = idRegra;
 		this.nome = nome;

@@ -6,6 +6,10 @@ import javax.xml.bind.annotation.XmlRootElement;
 public class Pagamento {
 
 	private int idPagamento;
+
+	public Pagamento() {
+	}
+
 	private String idDevedor;
 	private String idCredor;
 	private int juros;
