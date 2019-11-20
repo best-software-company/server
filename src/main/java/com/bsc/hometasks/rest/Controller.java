@@ -11,7 +11,7 @@ import javax.ws.rs.core.UriInfo;
 import java.util.List;
 
 @Path("/")
-public class HomeTasks {
+public class Controller {
     UsuarioDAO user = new UsuarioDAO();
     TarefaDAO tarefa = new TarefaDAO();
     RotinaDAO rotina = new RotinaDAO();
@@ -207,7 +207,7 @@ public class HomeTasks {
     public Response addRoutines(Rotina newRotina, @Context UriInfo uriInfo,@HeaderParam("token") String token) {
         if(token.compareTo("true")==0){
             int count = verificaCamposR(newRotina);
-            if(count==2) {
+            if(count==3) {
                 if (rotina.criaRotina(newRotina) > 0) {
                     return Response.status(Response.Status.CREATED).entity(rotina.buscaRotina(rotina.criaRotina(newRotina))).build();
                 }
@@ -468,9 +468,9 @@ public class HomeTasks {
     int verificaCamposR(Rotina newRotina){
         int count = 0;
         //ve se ele preencheu todas as paradas
-        if (newRotina.getIdRotina()!=0) count++;
+        if (newRotina.getTarefa().getIdTarefa()!=0) count++;
         if (newRotina.getValidade().length()!=0) count++;
-
+        if (verificaCamposT(newRotina.getTarefa()) == 6) count ++;
         return count;
     }
     int verificaCamposC(Casa newCasa){
@@ -500,5 +500,4 @@ public class HomeTasks {
         if(newRegra.getNome().length()!=0) count++;
         return count;
     }
-
 }

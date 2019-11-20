@@ -44,10 +44,10 @@ public class UsuarioDAO {
 		String sql;
 		if (usuario.getIdCasa() >0){
 			sql = "update Usuario set data = ?, genero = ?, pontos = ?, perfil = ?, nome = ?," +
-					"telefone = ?, senha = ?, email = ?, idCasa = ? where idUsuario = ?";
+					"telefone = ?, senha = ?, email = ?, idCasa = ?, foto = ? where idUsuario = ?";
 		}else {
 			sql = "update Usuario set data = ?, genero = ?, pontos = ?, perfil = ?, nome = ?," +
-					"telefone = ?, senha = ?, email = ? where idUsuario = ?";
+					"telefone = ?, senha = ?, email = ?, foto = ? where idUsuario = ?";
 		}
 		int rows = 0;
 		try (Connection conexao = ConnectionFactory.getDBConnection();
@@ -63,9 +63,11 @@ public class UsuarioDAO {
 			stmt.setString(8, usuario.getEmail());
 			if(usuario.getIdCasa() >0){
 				stmt.setInt(9,usuario.getIdCasa());
-				stmt.setString(10, usuario.getIdUsuario());
+				stmt.setBlob(10,usuario.getFoto());
+				stmt.setString(11, usuario.getIdUsuario());
 			}else {
-				stmt.setString(9, usuario.getIdUsuario());
+				stmt.setBlob(9,usuario.getFoto());
+				stmt.setString(10, usuario.getIdUsuario());
 			}
 
 			rows = stmt.executeUpdate();
@@ -98,7 +100,8 @@ public class UsuarioDAO {
 						rs.getString("senha"),
 						rs.getString("email"),
 						rs.getString("perfil"),
-						rs.getInt("idCasa"));
+						rs.getInt("idCasa"),
+						rs.getBlob("foto"));
 			}
 
 			stmt.close();
@@ -144,7 +147,8 @@ public class UsuarioDAO {
 						rs.getString("senha"),
 						rs.getString("email"),
 						rs.getString("perfil"),
-						rs.getInt("idCasa")));
+						rs.getInt("idCasa"),
+						rs.getBlob("foto")));
 
 			}
 		} catch (SQLException ex) {
@@ -171,7 +175,8 @@ public class UsuarioDAO {
 						rs.getString("senha"),
 						rs.getString("email"),
 						rs.getString("perfil"),
-						rs.getInt("idCasa")));
+						rs.getInt("idCasa"),
+						rs.getBlob("foto")));
 			}
 
 		} catch (SQLException ex) {

@@ -1,6 +1,7 @@
 package com.bsc.hometasks.pojo;
 
 import javax.xml.bind.annotation.XmlRootElement;
+import java.sql.Blob;
 
 @XmlRootElement
 public class Usuario {
@@ -15,26 +16,13 @@ public class Usuario {
 	private String email;
 	private String perfil;
 	private int idCasa;
+	private Blob foto;
 
 	public Usuario() {
 	}
 
-	public Usuario(String idUsuario, String nome, String data,
-				   String genero, int pontos, String telefone,
-				   String senha, String email, String perfil) {
-		this.idUsuario = idUsuario;
-		this.nome = nome;
-		this.data = data;
-		this.genero = genero;
-		this.pontos = pontos;
-		this.telefone = telefone;
-		this.senha = senha;
-		this.email = email;
-		this.perfil = perfil;
-	}
 
-	public Usuario(String idUsuario, String nome, String data, String genero, int pontos,
-				   String telefone, String senha, String email, String perfil, int idCasa) {
+	public Usuario(String idUsuario, String nome, String data, String genero, int pontos, String telefone, String senha, String email, String perfil, int idCasa, Blob foto) {
 		this.idUsuario = idUsuario;
 		this.nome = nome;
 		this.data = data;
@@ -45,6 +33,18 @@ public class Usuario {
 		this.email = email;
 		this.perfil = perfil;
 		this.idCasa = idCasa;
+		this.foto = foto;
+	}
+
+	public Usuario(String nome, String data, String genero, int pontos, String telefone, String senha, String email, String perfil) {
+		this.nome = nome;
+		this.data = data;
+		this.genero = genero;
+		this.pontos = pontos;
+		this.telefone = telefone;
+		this.senha = senha;
+		this.email = email;
+		this.perfil = perfil;
 	}
 
 	public String getIdUsuario() {
@@ -127,6 +127,14 @@ public class Usuario {
 		this.idCasa = idCasa;
 	}
 
+	public Blob getFoto() {
+		return foto;
+	}
+
+	public void setFoto(Blob foto) {
+		this.foto = foto;
+	}
+
 	@Override
 	public String toString() {
 		return "Usuario{" +
@@ -140,6 +148,7 @@ public class Usuario {
 				", email='" + email + '\'' +
 				", perfil='" + perfil + '\'' +
 				", idCasa=" + idCasa +
+				", foto=" + foto +
 				'}';
 	}
 }

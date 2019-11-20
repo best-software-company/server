@@ -1,6 +1,7 @@
 package com.bsc.hometasks.pojo;
 
 import javax.xml.bind.annotation.XmlRootElement;
+import java.sql.Blob;
 
 @XmlRootElement
 public class Casa {
@@ -10,22 +11,25 @@ public class Casa {
 	private String endereco;
 	private int aluguel;
 	private String descricao;
+	private Blob foto;
 
 	public Casa() {}
 
-	public Casa(int idCasa,String nome, String endereço, int aluguel, String descricao) {
+	public Casa(int idCasa, String nome, String endereco, int aluguel, String descricao, Blob foto) {
 		this.idCasa = idCasa;
-		this.nome = nome;
-		this.endereco = endereço;
-		this.aluguel = aluguel;
-		this.descricao = descricao;
-	}
-
-	public Casa(String nome, String endereco, int aluguel, String descricao) {
 		this.nome = nome;
 		this.endereco = endereco;
 		this.aluguel = aluguel;
 		this.descricao = descricao;
+		this.foto = foto;
+	}
+
+	public int getIdCasa() {
+		return idCasa;
+	}
+
+	public void setIdCasa(int idCasa) {
+		this.idCasa = idCasa;
 	}
 
 	public String getNome() {
@@ -60,9 +64,13 @@ public class Casa {
 		this.descricao = descricao;
 	}
 
-	public int getIdCasa() { return idCasa; }
+	public Blob getFoto() {
+		return foto;
+	}
 
-	public void setIdCasa(int idCasa) { this.idCasa = idCasa; }
+	public void setFoto(Blob foto) {
+		this.foto = foto;
+	}
 
 	@Override
 	public String toString() {
@@ -72,6 +80,7 @@ public class Casa {
 				", endereco='" + endereco + '\'' +
 				", aluguel=" + aluguel +
 				", descricao='" + descricao + '\'' +
+				", foto=" + foto +
 				'}';
 	}
 }

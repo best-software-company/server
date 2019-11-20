@@ -4,25 +4,18 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
 public class Rotina {
-	int idRotina;
 	String validade;
 	boolean alternar;
+	Tarefa tarefa;
 
 	public Rotina() {
 	}
 
-	public Rotina(int idRotina, String validade, boolean alternar) {
-		this.idRotina = idRotina;
+
+	public Rotina(String validade, boolean alternar, Tarefa tarefa) {
 		this.validade = validade;
 		this.alternar = alternar;
-	}
-
-	public int getIdRotina() {
-		return idRotina;
-	}
-
-	public void setIdRotina(int idRotina) {
-		this.idRotina = idRotina;
+		this.tarefa = tarefa;
 	}
 
 	public String getValidade() {
@@ -41,12 +34,20 @@ public class Rotina {
 		this.alternar = alternar;
 	}
 
+	public Tarefa getTarefa() {
+		return tarefa;
+	}
+
+	public void setTarefa(Tarefa tarefa) {
+		this.tarefa = tarefa;
+	}
+
 	@Override
 	public String toString() {
 		return "Rotina{" +
-				"idRotina=" + idRotina +
-				", validade='" + validade + '\'' +
+				"validade='" + validade + '\'' +
 				", alternar=" + alternar +
+				", tarefa=" + tarefa +
 				'}';
 	}
 }

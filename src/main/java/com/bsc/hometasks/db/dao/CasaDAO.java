@@ -15,7 +15,7 @@ import static java.sql.Statement.RETURN_GENERATED_KEYS;
 public class CasaDAO {
 
 	public int criaCasa(Casa casa) {
-		String sql = "insert into Casa (nome,descricao,aluguel,endereco) values (?,?,?,?);";
+		String sql = "insert into Casa (nome,descricao,aluguel,endereco) values (?,?,?,?,?);";
 		int id = 0;
 		// Try-with-resources irá fechar automaticamente a conexão
 		try (Connection conexao = ConnectionFactory.getDBConnection();
@@ -25,6 +25,7 @@ public class CasaDAO {
 			stmt.setString(2, casa.getDescricao());
 			stmt.setInt(3, casa.getAluguel());
 			stmt.setString(4, casa.getEndereco());
+			stmt.setBlob(5,casa.getFoto());
 			stmt.execute();
 
 			ResultSet rs = stmt.getGeneratedKeys();
@@ -72,7 +73,8 @@ public class CasaDAO {
 						rs.getString("nome"),
 						rs.getString("endereco"),
 						rs.getInt("aluguel"),
-						rs.getString("descricao"));
+						rs.getString("descricao"),
+						rs.getBlob("foto"));
 			}
 		} catch (SQLException ex) {
 			System.err.println(ex.toString());
@@ -111,7 +113,8 @@ public class CasaDAO {
 						rs.getString("nome"),
 						rs.getString("endereco"),
 						rs.getInt("aluguel"),
-						rs.getString("descricao")));
+						rs.getString("descricao"),
+						rs.getBlob("foto")));
 			}
 		} catch (SQLException ex) {
 			System.err.println(ex.toString());
@@ -133,7 +136,8 @@ public class CasaDAO {
 						rs.getString("nome"),
 						rs.getString("endereco"),
 						rs.getInt("aluguel"),
-						rs.getString("descricao")));
+						rs.getString("descricao"),
+						rs.getBlob("foto")));
 			}
 		} catch (SQLException ex) {
 			System.err.println(ex.toString());

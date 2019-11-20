@@ -14,14 +14,20 @@ import java.util.List;
 import static java.sql.Statement.RETURN_GENERATED_KEYS;
 
 public class RotinaDAO {
+	private TarefaDAO dao = new TarefaDAO();
+
 
 	public int criaRotina(Rotina rotina) {
-		String sql = "insert into Rotina (idRotina,validade,alternar) values (?,?,?)";
+		int ret = dao.criaTarefa(rotina.getTarefa());
+		if (ret == 0){
+			return 0;
+		}
+		String sql = "insert into Rotina (idTarefa,validade,alternar) values (?,?,?)";
 		int id = 0;
 		try (Connection conexao = ConnectionFactory.getDBConnection();
 			 PreparedStatement stmt = conexao.prepareStatement(sql,RETURN_GENERATED_KEYS)) {
 
-			stmt.setInt(1, rotina.getIdRotina());
+			stmt.setInt(1, rotina.getTarefa().getIdTarefa());
 			stmt.setString(2, rotina.getValidade());
 			stmt.setBoolean(3, rotina.isAlternar());
 			stmt.execute();
@@ -40,13 +46,15 @@ public class RotinaDAO {
 	}
 
 	public int atualizaRotina(Rotina rotina) {
-		String sql = "update Rotina set validade = ?, alternar = ?";
+		dao.atualizaTarefa(rotina.getTarefa());
+		String sql = "update Rotina set validade = ?, alternar = ? where idTarefa = ?";
 		int rows = 0;
 		try (Connection conexao = ConnectionFactory.getDBConnection();
 			 PreparedStatement stmt = conexao.prepareStatement(sql,RETURN_GENERATED_KEYS)) {
 
 			stmt.setString(1, rotina.getValidade());
 			stmt.setBoolean(2, rotina.isAlternar());
+			stmt.setInt(3,rotina.getTarefa().getIdTarefa());
 			rows = stmt.executeUpdate();
 
 		} catch (SQLException ex) {
@@ -56,7 +64,7 @@ public class RotinaDAO {
 	}
 
 	public Rotina buscaRotina(int idRotina) {
-		String sql = "select * from  Rotina where idRotina = ?";
+		String sql = "select * from  Rotina where idTarefa = ?";
 		Rotina rotina = null;
 		try (Connection conexao = ConnectionFactory.getDBConnection();
 			 PreparedStatement stmt = conexao.prepareStatement(sql)) {
@@ -65,10 +73,11 @@ public class RotinaDAO {
 			ResultSet rs = stmt.executeQuery();
 
 			if(rs.next()){
+				Tarefa tarefa = dao.buscaTarefa(rs.getInt("idTarefa"));
 				rotina = new Rotina(
-						rs.getInt("idRotina"),
 						rs.getString("validade"),
-						rs.getBoolean("alternar"));
+						rs.getBoolean("alternar"),
+						tarefa);
 			}
 
 			rs.close();
@@ -79,13 +88,13 @@ public class RotinaDAO {
 		return  rotina;
 	}
 
-	public int removeRotina (int idRotina){
-		String sql = "delete from  Rotina where idRotina = ?";
+	public int removeRotina (int idTarefa){
+		String sql = "delete from  Rotina where idTarefa = ?";
 		int rows = 0;
 		try (Connection conexao = ConnectionFactory.getDBConnection();
 			 PreparedStatement stmt = conexao.prepareStatement(sql)) {
 
-			stmt.setInt(1, idRotina);
+			stmt.setInt(1, idTarefa);
 			rows = stmt.executeUpdate();
 
 		} catch (SQLException ex) {
@@ -101,7 +110,7 @@ public class RotinaDAO {
 		TarefaDAO dao = new TarefaDAO();
 		List<Tarefa> tarefas = dao.buscaTarefasUsuarioEstado(idUsuario,"aberta");
 		for (Tarefa t : tarefas){
-			String sql = "select * from  Rotina where idRotina = ?";
+			String sql = "select * from  Rotina where idTarefa = ?";
 			try (Connection conexao = ConnectionFactory.getDBConnection();
 				 PreparedStatement stmt = conexao.prepareStatement(sql)) {
 
@@ -110,9 +119,9 @@ public class RotinaDAO {
 
 				while(rs.next()){
 					rotinas.add(new Rotina(
-							rs.getInt("idRotina"),
 							rs.getString("validade"),
-							rs.getBoolean("alternar")));
+							rs.getBoolean("alternar"),
+							t));
 				}
 
 				rs.close();
