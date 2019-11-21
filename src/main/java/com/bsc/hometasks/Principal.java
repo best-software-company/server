@@ -3,14 +3,13 @@ package com.bsc.hometasks;
 import com.bsc.hometasks.db.dao.*;
 import com.bsc.hometasks.pojo.*;
 
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 public class Principal {
-    private static void testaUsuario(){
+    private static void testaUsuario() throws UnsupportedEncodingException {
 
-        Usuario usuario = new Usuario("Roque017","Guilherme","1997,02,08",
-                "masculino",0,"48991100802",
-                "1233545","roquee@email","sem teto");
+        Usuario usuario = new Usuario("Roque017","Guilherme","1997,02,08","masculino",0,"48991100802","1233545","roquee@email","sem teto",0,null);
 
         UsuarioDAO dao = new UsuarioDAO();
         dao.criaUsuario(usuario);
@@ -36,8 +35,8 @@ public class Principal {
     }
 
     private static void testeCasa(){
-        Casa casa = new Casa("Casa dos Roque","rua jacinto pinto",
-                500,"um quarto");
+        Casa casa = new Casa(0,"Casa dos Roque","rua jacinto pinto",
+                500,"um quarto",null);
         CasaDAO dao = new CasaDAO();
         casa.setIdCasa(dao.criaCasa(casa));
         System.out.println(dao.buscaCasa(casa.getIdCasa()));
@@ -125,7 +124,7 @@ public class Principal {
         RotinaDAO dao = new RotinaDAO();
         Rotina rotina = dao.buscaRotina(3);
 
-        System.out.println(dao.buscaRotina(rotina.getIdRotina()));
+        System.out.println(dao.buscaRotina(rotina.getTarefa().getIdTarefa()));
         //dao.removeRotina(rotina.getIdRotina());
         //System.out.println(dao.buscaRotina(rotina.getIdRotina()));
 
@@ -141,8 +140,8 @@ public class Principal {
     public static void testeConvite() {
         UsuarioDAO daoUsuario = new UsuarioDAO();
         Usuario roque0 = daoUsuario.buscaUsuario("Roque0");
-        Casa casa = new Casa("Casa dos Roque","rua jacinto pinto",
-                500,"um quarto");
+        Casa casa = new Casa(0,"Casa dos Roque","rua jacinto pinto",
+                500,"um quarto",null);
         CasaDAO daoCasa = new CasaDAO();
         roque0.setIdCasa(daoCasa.criaCasa(casa));
         daoUsuario.atualizaUsuario(roque0);

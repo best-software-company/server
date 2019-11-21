@@ -278,7 +278,7 @@ public class Controller {
                     return Response.status(Response.Status.CREATED).entity(casa.buscaCasa(casa.criaCasa(newCasa))).build();
                 }
                 return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
-                        "    \"resposta\": \"\"Casa não pode ser criada\"\n" +
+                        "    \"resposta\": \"Casa não pode ser criada\n" +
                         "}").build();
             }
             return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +

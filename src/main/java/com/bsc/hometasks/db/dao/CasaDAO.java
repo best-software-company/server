@@ -15,7 +15,7 @@ import static java.sql.Statement.RETURN_GENERATED_KEYS;
 public class CasaDAO {
 
 	public int criaCasa(Casa casa) {
-		String sql = "insert into Casa (nome,descricao,aluguel,endereco) values (?,?,?,?,?);";
+		String sql = "insert into Casa (nome,descricao,aluguel,endereco,foto) values (?,?,?,?,?);";
 		int id = 0;
 		// Try-with-resources irá fechar automaticamente a conexão
 		try (Connection conexao = ConnectionFactory.getDBConnection();
@@ -41,7 +41,7 @@ public class CasaDAO {
 	}
 
 	public int atualizaCasa(Casa casa) {
-		String sql = "update Casa set nome = ?, descricao = ?, aluguel = ?, endereco = ?" +
+		String sql = "update Casa set nome = ?, descricao = ?, aluguel = ?, endereco = ?, foto = ?" +
 				" where idCasa = ?";
 		int rows = 0;
 		try (Connection conexao = ConnectionFactory.getDBConnection();
@@ -51,7 +51,8 @@ public class CasaDAO {
 			stmt.setString(2, casa.getDescricao());
 			stmt.setInt(3, casa.getAluguel());
 			stmt.setString(4, casa.getEndereco());
-			stmt.setInt(5, casa.getIdCasa());
+			stmt.setBlob(5,casa.getFoto());
+			stmt.setInt(6, casa.getIdCasa());
 
 			rows = stmt.executeUpdate();
 		} catch (SQLException ex) {
