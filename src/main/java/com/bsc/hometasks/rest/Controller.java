@@ -21,8 +21,8 @@ public class Controller {
 
     //testado
     @Path("/login/{credenciais}")
-    @GET
-    @Produces(MediaType.APPLICATION_JSON )
+    @POST
+    @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     public Response login(@PathParam("credenciais") String credenciais) {
 
         String log[] = credenciais.split(":");
@@ -407,7 +407,7 @@ public class Controller {
                     return Response.status(Response.Status.CREATED).entity(newRegra).build();
                 }
                 return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
-                        "    \"resposta\": \"\"Regra não pode ser criado\"\n" +
+                        "    \"resposta\": \"\"Regra não pode ser criada\"\n" +
                         "}").build();
             }
             return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
