@@ -33,8 +33,9 @@ public class UsuarioDAO {
 
 			stmt.execute();
 		} catch (SQLException ex) {
-			System.err.println(ex.toString());
 			return false;
+			//System.err.println(ex.toString());
+
 		}
 		return true;
 	}
@@ -44,10 +45,10 @@ public class UsuarioDAO {
 		String sql;
 		if (usuario.getIdCasa() >0){
 			sql = "update Usuario set data = ?, genero = ?, pontos = ?, perfil = ?, nome = ?," +
-					"telefone = ?, senha = ?, email = ?, idCasa = ?, foto = ? where idUsuario = ?";
+					"telefone = ?, senha = ?, email = ?, idCasa = ?, foto = ?, token = ? where idUsuario = ?";
 		}else {
 			sql = "update Usuario set data = ?, genero = ?, pontos = ?, perfil = ?, nome = ?," +
-					"telefone = ?, senha = ?, email = ?, foto = ? where idUsuario = ?";
+					"telefone = ?, senha = ?, email = ?, foto = ?, token = ? where idUsuario = ?";
 		}
 		int rows = 0;
 		try (Connection conexao = ConnectionFactory.getDBConnection();
@@ -64,10 +65,14 @@ public class UsuarioDAO {
 			if(usuario.getIdCasa() >0){
 				stmt.setInt(9,usuario.getIdCasa());
 				stmt.setBlob(10,usuario.getFoto());
-				stmt.setString(11, usuario.getIdUsuario());
+				stmt.setString(11, usuario.getToken());
+				stmt.setString(12, usuario.getIdUsuario());
+
 			}else {
 				stmt.setBlob(9,usuario.getFoto());
-				stmt.setString(10, usuario.getIdUsuario());
+				stmt.setString(10, usuario.getToken());
+				stmt.setString(11, usuario.getIdUsuario());
+
 			}
 
 			rows = stmt.executeUpdate();
@@ -101,7 +106,8 @@ public class UsuarioDAO {
 						rs.getString("email"),
 						rs.getString("perfil"),
 						rs.getInt("idCasa"),
-						rs.getBlob("foto"));
+						rs.getBlob("foto"),
+						rs.getString("token"));
 			}
 
 			stmt.close();
@@ -148,7 +154,8 @@ public class UsuarioDAO {
 						rs.getString("email"),
 						rs.getString("perfil"),
 						rs.getInt("idCasa"),
-						rs.getBlob("foto")));
+						rs.getBlob("foto"),
+						rs.getString("token")));
 
 			}
 		} catch (SQLException ex) {
@@ -176,12 +183,49 @@ public class UsuarioDAO {
 						rs.getString("email"),
 						rs.getString("perfil"),
 						rs.getInt("idCasa"),
-						rs.getBlob("foto")));
+						rs.getBlob("foto"),
+						rs.getString("token")));
 			}
 
 		} catch (SQLException ex) {
 			System.err.println(ex.toString());
 		}
 		return usuarios;
+	}
+
+	/*Retorna o usuario relacionado ao token*/
+	public Usuario buscaUsuarioToken(String token) {
+		String sql = "SELECT * from Usuario where token = ?";
+
+		Usuario usuario = null;
+		try (Connection conexao = ConnectionFactory.getDBConnection()) {
+
+			PreparedStatement stmt = conexao.prepareStatement(sql);
+			stmt.setString(1,token);
+			ResultSet rs = stmt.executeQuery();
+
+			if (rs.next()) {
+				usuario = new Usuario(
+						rs.getString("idUsuario"),
+						rs.getString("nome"),
+						rs.getString("data"),
+						rs.getString("genero"),
+						rs.getInt("pontos"),
+						rs.getString("telefone"),
+						rs.getString("senha"),
+						rs.getString("email"),
+						rs.getString("perfil"),
+						rs.getInt("idCasa"),
+						rs.getBlob("foto"),
+						rs.getString("token"));
+			}
+
+			stmt.close();
+			rs.close();
+		} catch (SQLException ex) {
+			System.err.println(ex.toString());
+		}
+
+		return usuario;
 	}
 }

@@ -9,7 +9,7 @@ import java.util.List;
 public class Principal {
     private static void testaUsuario() throws UnsupportedEncodingException {
 
-        Usuario usuario = new Usuario("Roque017","Guilherme","1997,02,08","masculino",0,"48991100802","1233545","roquee@email","sem teto",0,null);
+        Usuario usuario = new Usuario("Roque017","Guilherme","1997,02,08","masculino",0,"48991100802","1233545","roquee@email","sem teto",0,null, null);
 
         UsuarioDAO dao = new UsuarioDAO();
         dao.criaUsuario(usuario);

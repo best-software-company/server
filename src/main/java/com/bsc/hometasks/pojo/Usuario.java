@@ -17,12 +17,13 @@ public class Usuario {
 	private String perfil;
 	private int idCasa;
 	private Blob foto;
+	private String token;
 
 	public Usuario() {
 	}
 
 
-	public Usuario(String idUsuario, String nome, String data, String genero, int pontos, String telefone, String senha, String email, String perfil, int idCasa, Blob foto) {
+	public Usuario(String idUsuario, String nome, String data, String genero, int pontos, String telefone, String senha, String email, String perfil, int idCasa, Blob foto, String token) {
 		this.idUsuario = idUsuario;
 		this.nome = nome;
 		this.data = data;
@@ -34,6 +35,7 @@ public class Usuario {
 		this.perfil = perfil;
 		this.idCasa = idCasa;
 		this.foto = foto;
+		this.token = token;
 	}
 
 	public Usuario(String nome, String data, String genero, int pontos, String telefone, String senha, String email, String perfil) {
@@ -135,6 +137,14 @@ public class Usuario {
 		this.foto = foto;
 	}
 
+	public String getToken() {
+		return token;
+	}
+
+	public void setToken(String token) {
+		this.token = token;
+	}
+
 	@Override
 	public String toString() {
 		return "Usuario{" +
@@ -149,6 +159,7 @@ public class Usuario {
 				", perfil='" + perfil + '\'' +
 				", idCasa=" + idCasa +
 				", foto=" + foto +
+				", token=" + token +
 				'}';
 	}
 }

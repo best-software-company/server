@@ -8,6 +8,10 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 import java.util.List;
 
 @Path("/")
@@ -20,27 +24,43 @@ public class Controller {
     RegraDAO regra = new RegraDAO();
 
     //testado
-    @Path("/login/{credenciais}")
+    @Path("/login")
     @POST
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
-    public Response login(@PathParam("credenciais") String credenciais) {
-
-        String log[] = credenciais.split(":");
-        UsuarioDAO user = new UsuarioDAO();
-        Usuario buscarUser = new Usuario();
-
-        if(log.length==2){
-            buscarUser = user.buscaUsuario(log[0]);
-            if( buscarUser!=null){
-                if(buscarUser.getSenha().equals(log[1])){
-                    return Response.status(Response.Status.OK).entity("{\n" +
-                            " \"token\": \"true\"\n" +
+    public Response login(@HeaderParam("Authorization") String credBase64) {
+        if (credBase64 != null) {
+            String basic = credBase64.split(" ")[1];
+            String credenciais = new String(Base64.getDecoder().decode(basic));
+            String log[] = credenciais.split(":");
+            UsuarioDAO user = new UsuarioDAO();
+            Usuario buscarUser = new Usuario();
+            if (log.length == 2) {
+                buscarUser = user.buscaUsuario(log[0]);
+                if (buscarUser != null) {
+                    if (buscarUser.getSenha().compareTo(log[1]) == 0) {
+                        String token = getToken(credenciais);
+                        buscarUser.setToken(token);
+                        user.atualizaUsuario(buscarUser);
+                        return Response.status(Response.Status.OK).entity("{\n" +
+                                " \"token\": \"" + buscarUser.getToken() + "\"\n" +
+                                "}").build();
+                    }
+                    return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
+                            " \"error\": \"senha inválida\"\n" +
                             "}").build();
                 }
+                return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                        " \"error\": \"idUsuario inválido ou inexistente\"\n" +
+                        "}").build();
+
             }
+            return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                    " \"error\": \"Formato das credenciais inválido. Correto - Base64(idUsuario:senha)\"\n" +
+                    "}").build();
+
         }
         return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
-                " \"error\": \"Usuário ou Senha inválidos ou inexistente\"\n" +
+                " \"error\": \"Credenciais não enviadas no cabeçalho Authorization\"\n" +
                 "}").build();
 
     }
@@ -53,38 +73,45 @@ public class Controller {
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     public Response addUser(Usuario newUser, @Context UriInfo uriInfo) {
         int count = verificaCampos(newUser);
-        if(count>=8){
-            if(user.buscaUsuariosId(newUser.getIdUsuario()).size()>0){
+        if (count >= 8) {
+            if (user.buscaUsuariosId(newUser.getIdUsuario()).size() > 0) {
                 return Response.status(Response.Status.CONFLICT).entity("{\n" +
-                        " \"error\": \"\"Login já existe\"\n" +
+                        " \"error\": \"Login já existe\"\n" +
                         "}").build();
             }
 
-            if(user.criaUsuario(newUser)){
+            if (user.criaUsuario(newUser)) {
                 //return Response.created(builder.build()).build();
+                newUser.setSenha(null);
                 return Response.status(Response.Status.CREATED).entity(newUser).build();
             }
         }
-
         return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
-                " \"error\": \"\"Atributos Obrigatórios - Login, nome, senha, data, genero, perfil, telefone e email\"\n" +
+                " \"error\": \"Atributos Obrigatórios - idUsuario, nome, senha, data, genero, perfil, telefone e email\"\n" +
                 "}").build();
-
     }
 
     //testado
     @Path("/users/{nome}")
     @GET
-    @Produces(MediaType.APPLICATION_JSON )
+    @Produces(MediaType.APPLICATION_JSON)
     public Response searchUsers(@PathParam("nome") String nome, @HeaderParam("token") String token) {
-        if(token.compareTo("true")==0){
+        UsuarioDAO user = new UsuarioDAO();
+        Usuario userToken = user.buscaUsuarioToken(token);
+        if (userToken != null) {
             List<Usuario> users = user.buscaUsuariosId(nome);
-            if(users!=null) return Response.ok(users).build();
-            else return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
-                    " \"error\": \"Nenhum usuário encontrado\"\n" +
+            if (users.size() > 0) {
+                for (Usuario usuario : users) {
+                    usuario.setSenha(null);
+                    usuario.setToken(null);
+                }
+                return Response.ok(users).build();
+
+            } else return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                    "\"error\": \"Nenhum usuário encontrado\"\n" +
                     "}").build();
         }
-        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
                 " \"error\": \"Autenticação Necessária\"\n" +
                 "}").build();
     }
@@ -96,17 +123,40 @@ public class Controller {
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     public Response updateUser(Usuario updateUser, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
         UsuarioDAO user = new UsuarioDAO();
-        if(token.compareTo("true")==0){
-            if(user.atualizaUsuario(updateUser)  > 0){
-                return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
-                        "    \"resposta\": \"\"Usuário atualizado com sucesso.\"\n" +
+        if (token != null) {
+            Usuario userToken = user.buscaUsuarioToken(token);
+            if (userToken != null) {
+                if (updateUser.getIdUsuario() != null) {
+                    if (userToken.getIdUsuario().compareTo(updateUser.getIdUsuario()) == 0) {
+                        updateUser.setToken(userToken.getToken());
+                        if (updateUser.getSenha() == null) {
+                            updateUser.setSenha(userToken.getSenha());
+                        }
+                        int count = verificaCampos(updateUser);
+                        if (count >= 8) {
+                            if (user.atualizaUsuario(updateUser) > 0) {
+                                return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
+                                        "    \"resposta\": \"\"Usuário atualizado com sucesso.\"\n" +
+                                        "}").build();
+                            }
+                            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                                    "    \"error\": \"\"Erro ao atualizar Usuário.\"\n" +
+                                    "}").build();
+                        }
+                        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                                " \"error\": \"Atributos Obrigatórios - idUsuario, nome, data, genero, perfil, telefone e email\"\n" +
+                                "}").build();
+                    }
+                    return Response.status(Response.Status.FORBIDDEN).entity("{\n" +
+                            "    \"error\": \"Permissão Negada\"\n" +
+                            "}").build();
+                }
+                return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                        " \"error\": \"Atributos Obrigatórios - idUsuario, nome, senha, data, genero, perfil, telefone e email\"\n" +
                         "}").build();
             }
-            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
-                    "    \"error\": \"\"Usuário não encontrado.\"\n" +
-                    "}").build();
         }
-        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
                 "    \"error\": \"Autenticação Necessária\"\n" +
                 "}").build();
     }
@@ -114,12 +164,14 @@ public class Controller {
     //testado
     @Path("/tasks/{idEstado}")
     @GET
-    @Produces(MediaType.APPLICATION_JSON )
+    @Produces(MediaType.APPLICATION_JSON)
     public Response searchTasks(@PathParam("idEstado") String idEstado, @HeaderParam("token") String token) {
         String log[] = idEstado.split(":");
-        if(token.compareTo("true")==0){
-            List<Tarefa> tarefas = tarefa.buscaTarefasUsuarioEstado(log[0],log[1]);
-            if(tarefas.size()>=0) return Response.status(Response.Status.OK).entity(tarefas).build();
+        UsuarioDAO user = new UsuarioDAO();
+        Usuario userToken = user.buscaUsuarioToken(token);
+        if (userToken != null) {
+            List<Tarefa> tarefas = tarefa.buscaTarefasUsuarioEstado(log[0], log[1]);
+            if (tarefas.size() >= 0) return Response.status(Response.Status.OK).entity(tarefas).build();
             return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
                     "    \"error\": \"Nenhuma tarefa encontrada\"\n" +
                     "}").build();
@@ -135,10 +187,12 @@ public class Controller {
     @POST
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
-    public Response addUser(Tarefa newTarefa, @Context UriInfo uriInfo,@HeaderParam("token") String token) {
-        if(token.compareTo("true")==0){
+    public Response addUser(Tarefa newTarefa, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
+        UsuarioDAO user = new UsuarioDAO();
+        Usuario userToken = user.buscaUsuarioToken(token);
+        if (userToken != null) {
             int count = verificaCamposT(newTarefa);
-            if(count==6) {
+            if (count == 6) {
                 if (tarefa.criaTarefa(newTarefa) > 0) {
                     return Response.status(Response.Status.CREATED).entity(tarefa.buscaTarefa(tarefa.criaTarefa(newTarefa))).build();
                 }
@@ -162,9 +216,11 @@ public class Controller {
     @PUT
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
-    public Response updateTasks(Tarefa updateTarefa, @Context UriInfo uriInfo,@HeaderParam("token") String token) {
-        if(token.compareTo("true")==0) {
-            if(tarefa.atualizaTarefa(updateTarefa)  > 0){
+    public Response updateTasks(Tarefa updateTarefa, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
+        UsuarioDAO user = new UsuarioDAO();
+        Usuario userToken = user.buscaUsuarioToken(token);
+        if (userToken != null) {
+            if (tarefa.atualizaTarefa(updateTarefa) > 0) {
                 return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
                         "    \"resposta\": \"Tarefa realizada com sucesso\"\n" +
                         "}").build();
@@ -181,12 +237,13 @@ public class Controller {
     //testada
     @Path("/routines/{idUsuario}")
     @GET
-    @Produces(MediaType.APPLICATION_JSON )
+    @Produces(MediaType.APPLICATION_JSON)
     public Response searchRoutines(@PathParam("idUsuario") String idUsuario, @HeaderParam("token") String token) {
-
-        if(token.compareTo("true")==0){
+        UsuarioDAO user = new UsuarioDAO();
+        Usuario userToken = user.buscaUsuarioToken(token);
+        if (userToken != null) {
             List<Rotina> rotinas = rotina.buscaRotinasUsuario(idUsuario);
-            if(rotinas.size()>0)
+            if (rotinas.size() > 0)
                 return Response.status(Response.Status.OK).entity(rotinas).build();
 
             return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
@@ -204,10 +261,12 @@ public class Controller {
     @POST
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
-    public Response addRoutines(Rotina newRotina, @Context UriInfo uriInfo,@HeaderParam("token") String token) {
-        if(token.compareTo("true")==0){
+    public Response addRoutines(Rotina newRotina, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
+        UsuarioDAO user = new UsuarioDAO();
+        Usuario userToken = user.buscaUsuarioToken(token);
+        if (userToken != null) {
             int count = verificaCamposR(newRotina);
-            if(count==3) {
+            if (count == 3) {
                 if (rotina.criaRotina(newRotina) > 0) {
                     return Response.status(Response.Status.CREATED).entity(rotina.buscaRotina(rotina.criaRotina(newRotina))).build();
                 }
@@ -229,9 +288,11 @@ public class Controller {
     @PUT
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
-    public Response updateRoutines(Rotina updateRotina, @Context UriInfo uriInfo,@HeaderParam("token") String token) {
-        if(token.compareTo("true")==0){
-            if(rotina.atualizaRotina(updateRotina)>0){
+    public Response updateRoutines(Rotina updateRotina, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
+        UsuarioDAO user = new UsuarioDAO();
+        Usuario userToken = user.buscaUsuarioToken(token);
+        if (userToken != null) {
+            if (rotina.atualizaRotina(updateRotina) > 0) {
                 return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
                         "    \"resposta\": \"\"Rotina atualizada com sucesso.\"\n" +
                         "}").build();
@@ -248,12 +309,12 @@ public class Controller {
     //testada
     @Path("/home/{name_home}")
     @GET
-    @Produces(MediaType.APPLICATION_JSON )
+    @Produces(MediaType.APPLICATION_JSON)
     public Response searchHome(@PathParam("name_home") int name_home, @HeaderParam("token") String token) {
-
-        if(token.compareTo("true")==0){
-
-            if(casa.buscaCasa(name_home)!=null)
+        UsuarioDAO user = new UsuarioDAO();
+        Usuario userToken = user.buscaUsuarioToken(token);
+        if (userToken != null) {
+            if (casa.buscaCasa(name_home) != null)
                 return Response.status(Response.Status.OK).entity(casa.buscaCasa(name_home)).build();
 
             return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
@@ -271,9 +332,11 @@ public class Controller {
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     public Response addHome(Casa newCasa, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
-        if(token.compareTo("true")==0){
+        UsuarioDAO user = new UsuarioDAO();
+        Usuario userToken = user.buscaUsuarioToken(token);
+        if (userToken != null) {
             int count = verificaCamposC(newCasa);
-            if(count==4) {
+            if (count == 4) {
                 if (casa.criaCasa(newCasa) > 0) {
                     return Response.status(Response.Status.CREATED).entity(casa.buscaCasa(casa.criaCasa(newCasa))).build();
                 }
@@ -295,9 +358,11 @@ public class Controller {
     @PUT
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
-    public Response updateRoutines(Casa updateCasa, @Context UriInfo uriInfo,@HeaderParam("token") String token) {
-        if(token.compareTo("true")==0){
-            if(casa.atualizaCasa(updateCasa)>0){
+    public Response updateRoutines(Casa updateCasa, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
+        UsuarioDAO user = new UsuarioDAO();
+        Usuario userToken = user.buscaUsuarioToken(token);
+        if (userToken != null) {
+            if (casa.atualizaCasa(updateCasa) > 0) {
                 return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
                         " \"resposta\": \"Casa atualizada com sucesso.\"\n" +
                         "}").build();
@@ -313,13 +378,14 @@ public class Controller {
 
     @Path("/account/{pagCredDev}")
     @GET
-    @Produces(MediaType.APPLICATION_JSON )
+    @Produces(MediaType.APPLICATION_JSON)
     public Response searchConta(@PathParam("pagCredDev") String pagCredDev, @HeaderParam("token") String token) {
         String log[] = pagCredDev.split(":");
-        if(token.compareTo("true")==0){
-            ;
-            if(pagamento.buscaPagamento(Integer.parseInt(log[0]),log[1],log[2])!=null)
-                return Response.status(Response.Status.OK).entity(pagamento.buscaPagamento(Integer.parseInt(log[0]),log[1],log[2])).build();
+        UsuarioDAO user = new UsuarioDAO();
+        Usuario userToken = user.buscaUsuarioToken(token);
+        if (userToken != null) {
+            if (pagamento.buscaPagamento(Integer.parseInt(log[0]), log[1], log[2]) != null)
+                return Response.status(Response.Status.OK).entity(pagamento.buscaPagamento(Integer.parseInt(log[0]), log[1], log[2])).build();
 
             return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
                     "    \"error\": \"Nenhum pagamento encontrado\"\n" +
@@ -335,12 +401,13 @@ public class Controller {
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     public Response addAccount(Pagamento newPagamento, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
-
-        if(token.compareTo("true")==0){
+        UsuarioDAO user = new UsuarioDAO();
+        Usuario userToken = user.buscaUsuarioToken(token);
+        if (userToken != null) {
             int count = verificaCamposP(newPagamento);
-            if(count==3) {
+            if (count == 3) {
                 if (pagamento.criaPagamento(newPagamento) > 0) {
-                    return Response.status(Response.Status.CREATED).entity(pagamento.buscaPagamento(newPagamento.getIdPagamento(),newPagamento.getIdCredor(),newPagamento.getIdDevedor())).build();
+                    return Response.status(Response.Status.CREATED).entity(pagamento.buscaPagamento(newPagamento.getIdPagamento(), newPagamento.getIdCredor(), newPagamento.getIdDevedor())).build();
                 }
                 return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
                         "    \"resposta\": \"\"Pagamento não pode ser criado\"\n" +
@@ -359,9 +426,11 @@ public class Controller {
     @PUT
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
-    public Response updateAccount(Pagamento updatepag, @Context UriInfo uriInfo,@HeaderParam("token") String token) {
-        if(token.compareTo("true")==0){
-            if(pagamento.atualizaPagamento(updatepag)>0){
+    public Response updateAccount(Pagamento updatepag, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
+        UsuarioDAO user = new UsuarioDAO();
+        Usuario userToken = user.buscaUsuarioToken(token);
+        if (userToken != null) {
+            if (pagamento.atualizaPagamento(updatepag) > 0) {
                 return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
                         "    \"resposta\": \"\"Pagamento atualizado com sucesso.\"\n" +
                         "}").build();
@@ -377,13 +446,15 @@ public class Controller {
 
     @Path("/rules/{idRegraCasa}")
     @GET
-    @Produces(MediaType.APPLICATION_JSON )
+    @Produces(MediaType.APPLICATION_JSON)
     public Response searchRules(@PathParam("idRegraCasa") String idRegraCasa, @HeaderParam("token") String token) {
-        if(token.compareTo("true")==0){
+        UsuarioDAO user = new UsuarioDAO();
+        Usuario userToken = user.buscaUsuarioToken(token);
+        if (userToken != null) {
             String log[] = idRegraCasa.split(":");
 
-            if(regra.buscaRegra(Integer.parseInt(log[0]),Integer.parseInt(log[1]))!=null)
-                return Response.status(Response.Status.OK).entity(regra.buscaRegra(Integer.parseInt(log[0]),Integer.parseInt(log[1]))).build();
+            if (regra.buscaRegra(Integer.parseInt(log[0]), Integer.parseInt(log[1])) != null)
+                return Response.status(Response.Status.OK).entity(regra.buscaRegra(Integer.parseInt(log[0]), Integer.parseInt(log[1]))).build();
 
             return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
                     "    \"error\": \"Nenhuma regra encontrada\"\n" +
@@ -399,11 +470,12 @@ public class Controller {
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     public Response addRule(Regra newRegra, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
-
-        if(token.compareTo("true")==0){
+        UsuarioDAO user = new UsuarioDAO();
+        Usuario userToken = user.buscaUsuarioToken(token);
+        if (userToken != null) {
             int count = verificaCamposRules(newRegra);
-            if(count==5) {
-                if (regra.criaRegra(newRegra)> 0) {
+            if (count == 5) {
+                if (regra.criaRegra(newRegra) > 0) {
                     return Response.status(Response.Status.CREATED).entity(newRegra).build();
                 }
                 return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
@@ -423,9 +495,11 @@ public class Controller {
     @PUT
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
-    public Response updateAccount(Regra updateReg, @Context UriInfo uriInfo,@HeaderParam("token") String token) {
-        if(token.compareTo("true")==0){
-            if(regra.atualizaRegra(updateReg)>0){
+    public Response updateAccount(Regra updateReg, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
+        UsuarioDAO user = new UsuarioDAO();
+        Usuario userToken = user.buscaUsuarioToken(token);
+        if (userToken != null) {
+            if (regra.atualizaRegra(updateReg) > 0) {
                 return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
                         "    \"resposta\": \"\"Regra atualizada com sucesso.\"\n" +
                         "}").build();
@@ -439,65 +513,91 @@ public class Controller {
                 "}").build();
     }
 
-    int verificaCampos(Usuario newUser){
+    int verificaCampos(Usuario newUser) {
         int count = 0;
         //ve se ele preencheu todas as paradas
-        if (newUser.getIdUsuario().length()!=0) count++;
-        if (newUser.getNome().length()!=0) count++;
-        if (newUser.getSenha().length()!=0) count++;
-        if (newUser.getData().length()!=0) count++;
-        if (newUser.getGenero().length()!=0) count++;
-        if (newUser.getPerfil().length()!=0) count++;
-        if (newUser.getTelefone().length()!=0) count++;
-        if (newUser.getEmail().length()!=0) count++;
+        if (newUser.getIdUsuario() != null) count++;
+        if (newUser.getNome() != null) count++;
+        if (newUser.getSenha() != null) count++;
+        //if (newUser.getSenha().length()!=0) count++;
+        if (newUser.getData() != null) count++;
+        if (newUser.getGenero() != null) count++;
+        if (newUser.getPerfil() != null) count++;
+        if (newUser.getTelefone() != null) count++;
+        if (newUser.getEmail() != null) count++;
         return count;
     }
 
-    int verificaCamposT(Tarefa newTarefa){
+    int verificaCamposT(Tarefa newTarefa) {
         int count = 0;
         //ve se ele preencheu todas as paradas
-        if (newTarefa.getNome().length()!=0) count++;
-        if (newTarefa.getDescricao().length()!=0) count++;
-        if (newTarefa.getData().length()!=0) count++;
+        if (newTarefa.getNome().length() != 0) count++;
+        if (newTarefa.getDescricao().length() != 0) count++;
+        if (newTarefa.getData().length() != 0) count++;
         //if (newTarefa.getValor()!=0) count++;
-        if (newTarefa.getIdRelator().length()!=0) count++;
-        if (newTarefa.getIdResponsavel().length()!=0) count++;
-        if (newTarefa.getEstado().length()!=0) count++;
+        if (newTarefa.getIdRelator().length() != 0) count++;
+        if (newTarefa.getIdResponsavel().length() != 0) count++;
+        if (newTarefa.getEstado().length() != 0) count++;
         return count;
     }
-    int verificaCamposR(Rotina newRotina){
+
+    int verificaCamposR(Rotina newRotina) {
         int count = 0;
         //ve se ele preencheu todas as paradas
-        if (newRotina.getTarefa().getIdTarefa()!=0) count++;
-        if (newRotina.getValidade().length()!=0) count++;
-        if (verificaCamposT(newRotina.getTarefa()) == 6) count ++;
+        if (newRotina.getTarefa().getIdTarefa() != 0) count++;
+        if (newRotina.getValidade().length() != 0) count++;
+        if (verificaCamposT(newRotina.getTarefa()) == 6) count++;
         return count;
     }
-    int verificaCamposC(Casa newCasa){
+
+    int verificaCamposC(Casa newCasa) {
         int count = 0;
         //ve se ele preencheu todas as paradas
-        if (newCasa.getNome().length()!=0) count++;
-        if (newCasa.getAluguel()!=0) count++;
-        if(newCasa.getDescricao().length()!=0) count++;
-        if(newCasa.getEndereco().length()!=0) count++;
+        if (newCasa.getNome().length() != 0) count++;
+        if (newCasa.getAluguel() != 0) count++;
+        if (newCasa.getDescricao().length() != 0) count++;
+        if (newCasa.getEndereco().length() != 0) count++;
         return count;
     }
-    int verificaCamposP(Pagamento newPagamento){
+
+    int verificaCamposP(Pagamento newPagamento) {
         int count = 0;
         //ve se ele preencheu todas as paradas
-        if (newPagamento.getData()!=null) count++;
-        if (newPagamento.getIdCredor().length()!=0) count++;
-        if(newPagamento.getIdDevedor().length()!=0) count++;
+        if (newPagamento.getData() != null) count++;
+        if (newPagamento.getIdCredor().length() != 0) count++;
+        if (newPagamento.getIdDevedor().length() != 0) count++;
 
         return count;
     }
-    int verificaCamposRules(Regra newRegra){
+
+    int verificaCamposRules(Regra newRegra) {
         int count = 0;
-        if(newRegra.getDescricao().length()!=0) count++;
-        if(newRegra.getIdUsuario().length()!=0) count++;
-        if(newRegra.getIdCasa()!=0) count++;
-        if(newRegra.getData().length()!=0) count++;
-        if(newRegra.getNome().length()!=0) count++;
+        if (newRegra.getDescricao().length() != 0) count++;
+        if (newRegra.getIdUsuario().length() != 0) count++;
+        if (newRegra.getIdCasa() != 0) count++;
+        if (newRegra.getData().length() != 0) count++;
+        if (newRegra.getNome().length() != 0) count++;
         return count;
+    }
+
+    public String getToken(String credentials) {
+        String token = null;
+        String milis = String.valueOf(System.currentTimeMillis());
+        credentials = credentials + milis;
+        try {
+            MessageDigest m = MessageDigest.getInstance("SHA-1");
+
+            m.update(credentials.getBytes(), 0, credentials.length());
+
+            byte[] digest = m.digest();
+
+            token = new BigInteger(1, digest).toString(16);
+
+            System.out.println("SHA-1: " + token);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        return token;
+
     }
 }

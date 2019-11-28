@@ -34,7 +34,7 @@ public abstract class ConnectionFactory {
         properties.setProperty("password", "d&v1029homeT@$K");
         properties.setProperty("useSSL", "false");
 
-        String host = "35.247.234.136";
+        String host = "localhost";
         String port = "3306";
         String dbname = "dev_hometasks";
 
