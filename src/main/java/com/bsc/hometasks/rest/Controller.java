@@ -194,8 +194,8 @@ public class Controller {
         if (token != null) {
             Usuario userToken = user.buscaUsuarioToken(token);
             if (userToken != null) {
-                List<Tarefa> tarefas = tarefa.buscaTarefasUsuarioEstado(userToken.getToken(), estado);
-                if (tarefas != null) return Response.status(Response.Status.OK).entity(tarefas).build();
+                List<Tarefa> tarefas = tarefa.buscaTarefasUsuarioEstado(userToken.getIdUsuario(), estado);
+                if (tarefas.size() > 0) return Response.status(Response.Status.OK).entity(tarefas).build();
                 return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
                         "    \"error\": \"Nenhuma tarefa encontrada\"\n" +
                         "}").build();
@@ -214,23 +214,27 @@ public class Controller {
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     public Response addUser(Tarefa newTarefa, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
         UsuarioDAO user = new UsuarioDAO();
-        Usuario userToken = user.buscaUsuarioToken(token);
-        if (userToken != null) {
-            int count = verificaCamposT(newTarefa);
-            if (count == 6) {
-                if (tarefa.criaTarefa(newTarefa) > 0) {
-                    return Response.status(Response.Status.CREATED).entity(tarefa.buscaTarefa(tarefa.criaTarefa(newTarefa))).build();
+        if(token != null) {
+            Usuario userToken = user.buscaUsuarioToken(token);
+            if (userToken != null) {
+                int count = verificaCamposT(newTarefa);
+                if (count == 5) {
+                    newTarefa.setIdRelator(userToken.getIdUsuario());
+                    int idTarefa = tarefa.criaTarefa(newTarefa);
+                    if (idTarefa > 0) {
+                        newTarefa.setIdTarefa(idTarefa);
+                        return Response.status(Response.Status.CREATED).entity(newTarefa).build();
+                    }
+                    return Response.status(Response.Status.CONFLICT).entity("{\n" +
+                            "    \"error\": \"Não foi possível criar a tarefa no banco. idResponsavel inválido\"\n" +
+                            "}").build();
                 }
-                return Response.status(Response.Status.CONFLICT).entity("{\n" +
-                        "    \"error\": \"\"Não foi possível criar a tarefa.\"\n" +
+                return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                        "    \"error\": \"Atributos Obrigatórios - nome, descricao, data, valor, idResponsavel e estado\"\n" +
                         "}").build();
             }
-
-            return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
-                    "    \"error\": \"\"Atributos Obrigatórios - Nome, data, valor, idRelator, idResponsavel e estado\"\n" +
-                    "}").build();
         }
-        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
                 "    \"error\": \"Autenticação Necessária\"\n" +
                 "}").build();
 
@@ -243,18 +247,47 @@ public class Controller {
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     public Response updateTasks(Tarefa updateTarefa, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
         UsuarioDAO user = new UsuarioDAO();
-        Usuario userToken = user.buscaUsuarioToken(token);
-        if (userToken != null) {
-            if (tarefa.atualizaTarefa(updateTarefa) > 0) {
-                return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
-                        "    \"resposta\": \"Tarefa realizada com sucesso\"\n" +
+        if(token != null) {
+            Usuario userToken = user.buscaUsuarioToken(token);
+            if(userToken != null) {
+                if(updateTarefa.getIdTarefa() != 0) {
+                    int count = verificaCamposT(updateTarefa);
+                    if (count != 0) {
+                        Tarefa oldTarefa = tarefa.buscaTarefa(updateTarefa.getIdTarefa());
+                        if (oldTarefa != null) {
+                            String usuario = userToken.getIdUsuario();
+                            String responsavel = oldTarefa.getIdResponsavel();
+                            String relator = oldTarefa.getIdRelator();
+                            if ((usuario.compareTo(responsavel) == 0) || (usuario.compareTo(relator) == 0)){
+                                atualizaCamposTarefa(updateTarefa, oldTarefa);
+                                updateTarefa.setIdRelator(relator);
+                                if (tarefa.atualizaTarefa(updateTarefa) > 0) {
+                                    return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
+                                            "    \"resposta\": \"Tarefa atualizada com sucesso\"\n" +
+                                            "}").build();
+                                }
+                                return Response.status(Response.Status.CONFLICT).entity("{\n" +
+                                        "    \"error\": \"Não foi possível atualizar tarefa no banco.\"\n" +
+                                        "}").build();
+                            }
+                            return Response.status(Response.Status.FORBIDDEN).entity("{\n" +
+                                    "    \"error\": \"Permissão Negada\"\n" +
+                                    "}").build();
+                        }
+                        return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                                "    \"error\": \"A tarefa não foi encontrada\"\n" +
+                                "}").build();
+                    }
+                    return Response.status(Response.Status.NOT_MODIFIED).entity("{\n" +
+                            "    \"error\": \"Tarefa sem nenhum campo para alterar.\"\n" +
+                            "}").build();
+                }
+                return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                        "    \"error\": \"Atributo idTarefa obrigatório\"\n" +
                         "}").build();
             }
-            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
-                    "    \"error\": \"\"Tarefa não encontrada.\"\n" +
-                    "}").build();
         }
-        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
                 "    \"error\": \"Autenticação Necessária\"\n" +
                 "}").build();
     }
@@ -319,7 +352,7 @@ public class Controller {
         if (userToken != null) {
             if (rotina.atualizaRotina(updateRotina) > 0) {
                 return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
-                        "    \"resposta\": \"\"Rotina atualizada com sucesso.\"\n" +
+                        "    \"resposta\": \"Rotina atualizada com sucesso.\"\n" +
                         "}").build();
             }
             return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
@@ -556,13 +589,13 @@ public class Controller {
     int verificaCamposT(Tarefa newTarefa) {
         int count = 0;
         //ve se ele preencheu todas as paradas
-        if (newTarefa.getNome().length() != 0) count++;
-        if (newTarefa.getDescricao().length() != 0) count++;
-        if (newTarefa.getData().length() != 0) count++;
+        if (newTarefa.getNome() != null) count++;
+        if (newTarefa.getDescricao() != null) count++;
+        if (newTarefa.getData() != null) count++;
         //if (newTarefa.getValor()!=0) count++;
-        if (newTarefa.getIdRelator().length() != 0) count++;
-        if (newTarefa.getIdResponsavel().length() != 0) count++;
-        if (newTarefa.getEstado().length() != 0) count++;
+        //if (newTarefa.getIdRelator() != null) count++;
+        if (newTarefa.getIdResponsavel() != null) count++;
+        if (newTarefa.getEstado() != null) count++;
         return count;
     }
 
@@ -603,6 +636,16 @@ public class Controller {
         if (newRegra.getData().length() != 0) count++;
         if (newRegra.getNome().length() != 0) count++;
         return count;
+    }
+    void atualizaCamposTarefa(Tarefa updateTarefa, Tarefa oldTarefa){
+        if (updateTarefa.getData() == null) updateTarefa.setData(oldTarefa.getData());
+        if (updateTarefa.getIdResponsavel() == null)
+            updateTarefa.setIdResponsavel(oldTarefa.getIdResponsavel());
+        if (updateTarefa.getDescricao() == null)
+            updateTarefa.setDescricao(oldTarefa.getDescricao());
+        if (updateTarefa.getEstado() == null) updateTarefa.setDescricao(oldTarefa.getEstado());
+        if (updateTarefa.getNome() == null) updateTarefa.setNome(oldTarefa.getNome());
+        if (updateTarefa.getValor() == 0) updateTarefa.setValor(oldTarefa.getValor());
     }
 
     public String getToken(String credentials) {
