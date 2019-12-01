@@ -33,7 +33,8 @@ dependencies {
     compile group: 'javax.xml.bind', name: 'jaxb-api', version: '2.2.4'
 }
 
-gretty {
+gretty { 
+    httpPort = 80
     servletContainer = 'tomcat8'
     contextPath = '/'
 }
