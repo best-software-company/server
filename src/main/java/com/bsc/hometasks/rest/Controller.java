@@ -92,15 +92,15 @@ public class Controller {
     }
 
     //testado
-    @Path("/users/{nome}")
+    @Path("/users/list/{idUsuario}")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response searchUsers(@PathParam("nome") String nome, @HeaderParam("token") String token) {
+    public Response searchUser(@PathParam("idUsuario") String idUsuario, @HeaderParam("token") String token) {
         UsuarioDAO user = new UsuarioDAO();
         Usuario userToken = user.buscaUsuarioToken(token);
         if (userToken != null) {
-            List<Usuario> users = user.buscaUsuariosId(nome);
-            if (users.size() > 0) {
+            List<Usuario> users = user.buscaUsuariosId(idUsuario);
+            if (users != null) {
                 for (Usuario usuario : users) {
                     usuario.setSenha(null);
                     usuario.setToken(null);
@@ -109,6 +109,30 @@ public class Controller {
 
             } else return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
                     "\"error\": \"Nenhum usuário encontrado\"\n" +
+                    "}").build();
+        }
+        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
+                " \"error\": \"Autenticação Necessária\"\n" +
+                "}").build();
+    }
+
+    //testado
+    @Path("/users/{idUsuario}")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response searchUsers(@PathParam("idUsuario") String idUsuario, @HeaderParam("token") String token) {
+        UsuarioDAO user = new UsuarioDAO();
+        Usuario userToken = user.buscaUsuarioToken(token);
+        if (userToken != null) {
+            Usuario usuario = user.buscaUsuario(idUsuario);
+            if (usuario != null) {
+                usuario.setSenha(null);
+                usuario.setToken(null);
+                return Response.ok(usuario).build();
+
+            }
+            else return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                    "\"error\": \"Usuário não encontrado\"\n" +
                     "}").build();
         }
         return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
@@ -162,21 +186,22 @@ public class Controller {
     }
 
     //testado
-    @Path("/tasks/{idEstado}")
+    @Path("/tasks/{estado}")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response searchTasks(@PathParam("idEstado") String idEstado, @HeaderParam("token") String token) {
-        String log[] = idEstado.split(":");
+    public Response searchTasks(@PathParam("estado") String estado, @HeaderParam("token") String token) {
         UsuarioDAO user = new UsuarioDAO();
-        Usuario userToken = user.buscaUsuarioToken(token);
-        if (userToken != null) {
-            List<Tarefa> tarefas = tarefa.buscaTarefasUsuarioEstado(log[0], log[1]);
-            if (tarefas.size() >= 0) return Response.status(Response.Status.OK).entity(tarefas).build();
-            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
-                    "    \"error\": \"Nenhuma tarefa encontrada\"\n" +
-                    "}").build();
+        if (token != null) {
+            Usuario userToken = user.buscaUsuarioToken(token);
+            if (userToken != null) {
+                List<Tarefa> tarefas = tarefa.buscaTarefasUsuarioEstado(userToken.getToken(), estado);
+                if (tarefas != null) return Response.status(Response.Status.OK).entity(tarefas).build();
+                return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                        "    \"error\": \"Nenhuma tarefa encontrada\"\n" +
+                        "}").build();
+            }
         }
-        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
                 "    \"error\": \"Autenticação Necessária\"\n" +
                 "}").build();
     }
