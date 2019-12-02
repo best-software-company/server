@@ -42,7 +42,7 @@ public class ComentarioDAO {
 
 	public int atualizaComentario(Comentario comentario) {
 		String sql = "update Comentario set texto = ?, midia = ?, data = ? where " +
-				"idTarefa = ? and idUsuario = ?";
+				"idComentario = ?";
 		int rows = 0;
 		try (Connection conexao = ConnectionFactory.getDBConnection();
 			 PreparedStatement stmt = conexao.prepareStatement(sql,RETURN_GENERATED_KEYS)) {
@@ -50,8 +50,7 @@ public class ComentarioDAO {
 			stmt.setString(1,comentario.getTexto());
 			stmt.setBlob(2,comentario.getMidia());
 			stmt.setString(3,comentario.getData());
-			stmt.setInt(4,comentario.getIdTarefa());
-			stmt.setString(5,comentario.getIdUsuario());
+			stmt.setInt(4,comentario.getIdComentario());
 			rows = stmt.executeUpdate();
 		} catch (SQLException ex) {
 			System.err.println(ex.toString());
@@ -67,6 +66,32 @@ public class ComentarioDAO {
 
 			stmt.setString(1,idUsuario);
 			stmt.setInt(2,idTarefa);
+			ResultSet rs = stmt.executeQuery();
+
+			if(rs.next()){
+				comentario = new Comentario(
+						rs.getInt("idComentario"),
+						rs.getString("texto"),
+						rs.getBlob("midia"),
+						rs.getString("data"),
+						rs.getInt("idTarefa"),
+						rs.getString("idUsuario"));
+			}
+
+
+		} catch (SQLException ex) {
+			System.err.println(ex.toString());
+		}
+		return comentario;
+	}
+
+	public Comentario buscaComentarioById(int idComentario) {
+		String sql = "select * from Comentario where idComentario = ?";
+		Comentario comentario = null;
+		try (Connection conexao = ConnectionFactory.getDBConnection();
+			 PreparedStatement stmt = conexao.prepareStatement(sql)) {
+
+			stmt.setInt(1,idComentario);
 			ResultSet rs = stmt.executeQuery();
 
 			if(rs.next()){

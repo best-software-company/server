@@ -14,6 +14,8 @@ public class Comentario {
 	private int idTarefa;
 	private String idUsuario;
 
+	public Comentario(){}
+
 	public Comentario(int idComentario, String texto, Blob midia, String data, int idTarefa, String idUsuario) {
 		this.idComentario = idComentario;
 		this.texto = texto;
@@ -29,6 +31,14 @@ public class Comentario {
 		this.data = data;
 		this.idTarefa = idTarefa;
 		this.idUsuario = idUsuario;
+	}
+
+	public int getIdComentario() {
+		return idComentario;
+	}
+
+	public void setIdComentario(int idComentario) {
+		this.idComentario = idComentario;
 	}
 
 	public String getTexto() {

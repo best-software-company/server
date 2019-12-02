@@ -22,6 +22,7 @@ public class Controller {
     CasaDAO casa = new CasaDAO();
     PagamentoDAO pagamento = new PagamentoDAO();
     RegraDAO regra = new RegraDAO();
+    ComentarioDAO comentario = new ComentarioDAO();
 
     //testado
     @Path("/login")
@@ -130,8 +131,7 @@ public class Controller {
                 usuario.setToken(null);
                 return Response.ok(usuario).build();
 
-            }
-            else return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+            } else return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
                     "\"error\": \"Usuário não encontrado\"\n" +
                     "}").build();
         }
@@ -212,9 +212,9 @@ public class Controller {
     @POST
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
-    public Response addUser(Tarefa newTarefa, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
+    public Response addTask(Tarefa newTarefa, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
         UsuarioDAO user = new UsuarioDAO();
-        if(token != null) {
+        if (token != null) {
             Usuario userToken = user.buscaUsuarioToken(token);
             if (userToken != null) {
                 int count = verificaCamposT(newTarefa);
@@ -245,12 +245,12 @@ public class Controller {
     @PUT
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
-    public Response updateTasks(Tarefa updateTarefa, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
+    public Response updateTask(Tarefa updateTarefa, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
         UsuarioDAO user = new UsuarioDAO();
-        if(token != null) {
+        if (token != null) {
             Usuario userToken = user.buscaUsuarioToken(token);
-            if(userToken != null) {
-                if(updateTarefa.getIdTarefa() != 0) {
+            if (userToken != null) {
+                if (updateTarefa.getIdTarefa() != 0) {
                     int count = verificaCamposT(updateTarefa);
                     if (count != 0) {
                         Tarefa oldTarefa = tarefa.buscaTarefa(updateTarefa.getIdTarefa());
@@ -258,7 +258,7 @@ public class Controller {
                             String usuario = userToken.getIdUsuario();
                             String responsavel = oldTarefa.getIdResponsavel();
                             String relator = oldTarefa.getIdRelator();
-                            if ((usuario.compareTo(responsavel) == 0) || (usuario.compareTo(relator) == 0)){
+                            if ((usuario.compareTo(responsavel) == 0) || (usuario.compareTo(relator) == 0)) {
                                 atualizaCamposTarefa(updateTarefa, oldTarefa);
                                 updateTarefa.setIdRelator(relator);
                                 if (tarefa.atualizaTarefa(updateTarefa) > 0) {
@@ -284,6 +284,119 @@ public class Controller {
                 }
                 return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
                         "    \"error\": \"Atributo idTarefa obrigatório\"\n" +
+                        "}").build();
+            }
+        }
+        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
+                "    \"error\": \"Autenticação Necessária\"\n" +
+                "}").build();
+    }
+
+    @Path("/comments/{idTarefa}")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response searchComments(@PathParam("idTarefa") String idTarefa, @HeaderParam("token") String token) {
+        if (token != null) {
+            Usuario userToken = user.buscaUsuarioToken(token);
+            if (userToken != null) {
+                Tarefa task = tarefa.buscaTarefa(Integer.parseInt(idTarefa));
+                if (task != null) {
+                    List<Comentario> comentarios = comentario.buscaComentariosTarefa(Integer.parseInt(idTarefa));
+                    if (comentarios.size() > 0) return Response.status(Response.Status.OK).entity(comentarios).build();
+                    return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                            " \"error\": \"Nenhum comentário encontrado\"\n" +
+                            "}").build();
+                }
+                return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                        "\"error\": \"A tarefa não foi encontrada\"\n" +
+                        "}").build();
+            }
+        }
+        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n"+
+                   " \"error\": \"Autenticação Necessária\"\n"+
+                   "}").
+
+    build();
+
+}
+
+    @Path("/comments")
+    @POST
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response addComment(Comentario newComentario, @HeaderParam("token") String token) {
+        if (token != null) {
+            Usuario userToken = user.buscaUsuarioToken(token);
+            if (userToken != null) {
+                int count = verificaCamposComentario(newComentario);
+                if (count == 3) {
+                    Tarefa task = tarefa.buscaTarefa(newComentario.getIdTarefa());
+                    if (task != null) {
+                        newComentario.setIdUsuario(userToken.getIdUsuario());
+                        int idComentario = comentario.criaComentario(newComentario);
+                        if (idComentario > 0) {
+                            newComentario.setIdComentario(idComentario);
+                            return Response.status(Response.Status.CREATED).entity(newComentario).build();
+                        }
+                        return Response.status(Response.Status.CONFLICT).entity("{\n" +
+                                "    \"error\": \"Não foi possível adicionar o comentário\"\n" +
+                                "}").build();
+                    }
+                    return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                            "    \"error\": \"A tarefa não foi encontrada\"\n" +
+                            "}").build();
+                }
+                return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                        "    \"error\": \"Atributos Obrigatórios - texto, data e idTarefa\"\n" +
+                        "}").build();
+            }
+        }
+        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
+                "    \"error\": \"Autenticação Necessária\"\n" +
+                "}").build();
+
+    }
+
+    @Path("/comments")
+    @PUT
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response updateComment(Comentario updateComentario, @HeaderParam("token") String token) {
+        UsuarioDAO user = new UsuarioDAO();
+        if (token != null) {
+            Usuario userToken = user.buscaUsuarioToken(token);
+            if (userToken != null) {
+                if (updateComentario.getIdComentario() != 0) {
+                    Comentario oldComments = comentario.buscaComentarioById(updateComentario.getIdComentario());
+                    if(oldComments != null) {
+                        String usuario = userToken.getIdUsuario();
+                        String userComments = oldComments.getIdUsuario();
+                        if(usuario.compareTo(userComments) == 0) {
+                            int count = verificaCamposComentario(updateComentario);
+                            if (count != 0) {
+                                atualizaCamposComentario(updateComentario, oldComments);
+                                if (comentario.atualizaComentario(updateComentario) > 0) {
+                                    return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
+                                                    "    \"resposta\": \"Comentario atualizado com sucesso\"\n" +
+                                                    "}").build();
+                                }
+                                return Response.status(Response.Status.CONFLICT).entity("{\n" +
+                                                "    \"error\": \"Não foi possível atualizar comentario no banco.\"\n" +
+                                                "}").build();
+                            }
+                            return Response.status(Response.Status.NOT_MODIFIED).entity("{\n" +
+                                    "    \"error\": \"Comentário sem nenhum campo para alterar.\"\n" +
+                                    "}").build();
+                        }
+                        return Response.status(Response.Status.FORBIDDEN).entity("{\n" +
+                                "    \"error\": \"Permissão Negada\"\n" +
+                                "}").build();
+                    }
+                    return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                            "    \"error\": \"Comentário não encontrado\"\n" +
+                            "}").build();
+                }
+                return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                        "    \"error\": \"Atributo idComentario obrigatório\"\n" +
                         "}").build();
             }
         }
@@ -618,6 +731,15 @@ public class Controller {
         return count;
     }
 
+    int verificaCamposComentario(Comentario newComentario) {
+        int count = 0;
+        if (newComentario.getIdTarefa() != 0) count++;
+        if (newComentario.getData() != null) count++;
+        if (newComentario.getTexto() != null) count++;
+
+        return count;
+    }
+
     int verificaCamposP(Pagamento newPagamento) {
         int count = 0;
         //ve se ele preencheu todas as paradas
@@ -637,7 +759,8 @@ public class Controller {
         if (newRegra.getNome().length() != 0) count++;
         return count;
     }
-    void atualizaCamposTarefa(Tarefa updateTarefa, Tarefa oldTarefa){
+
+    void atualizaCamposTarefa(Tarefa updateTarefa, Tarefa oldTarefa) {
         if (updateTarefa.getData() == null) updateTarefa.setData(oldTarefa.getData());
         if (updateTarefa.getIdResponsavel() == null)
             updateTarefa.setIdResponsavel(oldTarefa.getIdResponsavel());
@@ -646,6 +769,15 @@ public class Controller {
         if (updateTarefa.getEstado() == null) updateTarefa.setDescricao(oldTarefa.getEstado());
         if (updateTarefa.getNome() == null) updateTarefa.setNome(oldTarefa.getNome());
         if (updateTarefa.getValor() == 0) updateTarefa.setValor(oldTarefa.getValor());
+    }
+
+    void atualizaCamposComentario(Comentario updateComentario, Comentario oldComentario) {
+        if (updateComentario.getTexto() == null) updateComentario.setTexto(oldComentario.getTexto());
+        if (updateComentario.getData() == null) updateComentario.setData(oldComentario.getData());
+        if (updateComentario.getMidia() == null) updateComentario.setMidia(oldComentario.getMidia());
+        updateComentario.setIdComentario(oldComentario.getIdComentario());
+        updateComentario.setIdUsuario(oldComentario.getIdUsuario());
+        updateComentario.setIdTarefa(oldComentario.getIdTarefa());
     }
 
     public String getToken(String credentials) {
