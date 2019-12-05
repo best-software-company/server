@@ -478,25 +478,59 @@ public class Controller {
     }
 
     //testada
-    @Path("/home/{name_home}")
+    @Path("/home/list/{name_home}")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response searchHome(@PathParam("name_home") int name_home, @HeaderParam("token") String token) {
+    public Response searchHome(@PathParam("name_home") String name_home, @HeaderParam("token") String token) {
         UsuarioDAO user = new UsuarioDAO();
         Usuario userToken = user.buscaUsuarioToken(token);
         if (userToken != null) {
-            if (casa.buscaCasa(name_home) != null)
-                return Response.status(Response.Status.OK).entity(casa.buscaCasa(name_home)).build();
+            if (name_home != null) {
+                List<Casa> casas = casa.buscaCasasNome(name_home);
+                if (casas.size() == 0) {
+                    casas = casa.buscaCasasEndereco(name_home);
+                }
+                if (casas.size() > 0) {
+                    return Response.ok(casas).build();
 
-            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
-                    "    \"error\": \"Nenhuma casa encontrada\"\n" +
+                } else return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                        "\"error\": \"Nenhuma casa encontrada de acordo com o nome ou endereço informado\"\n" +
+                        "}").build();
+            }
+            return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                    "    \"error\": \"Necessário envio do parâmetro nome ou endereço na URL\"\n" +
                     "}").build();
         }
-        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
-                "    \"error\": \"Autenticação Necessária\"\n" +
+        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
+                " \"error\": \"Autenticação Necessária\"\n" +
                 "}").build();
     }
 
+    @Path("/home/{idCasa}")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response searchHomeId(@PathParam("idCasa") String idCasa, @HeaderParam("token") String token) {
+        UsuarioDAO user = new UsuarioDAO();
+        Usuario userToken = user.buscaUsuarioToken(token);
+        if (userToken != null) {
+            if (idCasa != null) {
+                Casa home = casa.buscaCasa(Integer.parseInt(idCasa));
+                if (home != null) {
+                    return Response.ok(home).build();
+
+                }
+                return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                        "\"error\": \"Nenhuma casa encontrada de acordo com o id informado\"\n" +
+                        "}").build();
+            }
+            return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                    "    \"error\": \"Necessário envio do parâmetro nome ou endereço na URL\"\n" +
+                    "}").build();
+        }
+        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
+                " \"error\": \"Autenticação Necessária\"\n" +
+                "}").build();
+    }
     //testada
     @Path("/home")
     @POST
@@ -508,19 +542,24 @@ public class Controller {
         if (userToken != null) {
             int count = verificaCamposC(newCasa);
             if (count == 4) {
-                if (casa.criaCasa(newCasa) > 0) {
-                    return Response.status(Response.Status.CREATED).entity(casa.buscaCasa(casa.criaCasa(newCasa))).build();
+                int idHome = casa.criaCasa(newCasa);
+                if (idHome > 0) {
+                    newCasa.setIdCasa(idHome);
+                    userToken.setIdCasa(idHome);
+                    userToken.setPerfil("responsavel");
+                    user.atualizaUsuario(userToken);
+                    return Response.status(Response.Status.CREATED).entity(newCasa).build();
                 }
-                return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
-                        "    \"resposta\": \"Casa não pode ser criada\n" +
+                return Response.status(Response.Status.CONFLICT).entity("{\n" +
+                        "\"error\": \"Não foi possível criar a Casa no banco de dados\"\n" +
                         "}").build();
             }
             return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
-                    "    \"error\": \"\"Atributos Obrigatórios - Nome, descrição, aluguel e endereço\"\n" +
+                    "    \"error\": \"Atributos Obrigatórios - nome, endereco, descricao e aluguel\"\n" +
                     "}").build();
         }
-        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
-                "    \"error\": \"Autenticação Necessária\"\n" +
+        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
+                " \"error\": \"Autenticação Necessária\"\n" +
                 "}").build();
     }
 
@@ -533,19 +572,40 @@ public class Controller {
         UsuarioDAO user = new UsuarioDAO();
         Usuario userToken = user.buscaUsuarioToken(token);
         if (userToken != null) {
-            if (casa.atualizaCasa(updateCasa) > 0) {
-                return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
-                        " \"resposta\": \"Casa atualizada com sucesso.\"\n" +
+            int idCasa = updateCasa.getIdCasa();
+            if (idCasa != 0) {
+                Casa oldCasa = casa.buscaCasa(idCasa);
+                if(oldCasa != null) {
+                    int idCasaUserToken = userToken.getIdCasa();
+                    String pefilUserToken = userToken.getPerfil();
+                    if ((idCasa == idCasaUserToken) && (pefilUserToken.compareToIgnoreCase("responsavel") == 0)) {
+                       atualizaCamposCasa(updateCasa, oldCasa);
+                            if (casa.atualizaCasa(updateCasa) > 0) {
+                                return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
+                                        "    \"resposta\": \"Casa atualizada com sucesso\"\n" +
+                                        "}").build();
+                            }
+                            return Response.status(Response.Status.CONFLICT).entity("{\n" +
+                                    "\"error\": \"Não foi possível Atualizar a Casa no banco de dados\"\n" +
+                                    "}").build();
+                    }
+                    return Response.status(Response.Status.FORBIDDEN).entity("{\n" +
+                            "    \"error\": \"Permissão Negada\"\n" +
+                            "}").build();
+                }
+                return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                        "\"error\": \"A casa informada não foi encontrada\"\n" +
                         "}").build();
             }
-            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
-                    "    \"error\": \"\"Casa não encontrada.\"\n" +
+            return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                    "    \"error\": \"Atributo idCasa é obrigatório\"\n" +
                     "}").build();
         }
-        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
-                "    \"error\": \"Autenticação Necessária\"\n" +
+        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
+                " \"error\": \"Autenticação Necessária\"\n" +
                 "}").build();
     }
+
 
     @Path("/account/{pagCredDev}")
     @GET
@@ -724,10 +784,10 @@ public class Controller {
     int verificaCamposC(Casa newCasa) {
         int count = 0;
         //ve se ele preencheu todas as paradas
-        if (newCasa.getNome().length() != 0) count++;
+        if (newCasa.getNome() != null) count++;
         if (newCasa.getAluguel() != 0) count++;
-        if (newCasa.getDescricao().length() != 0) count++;
-        if (newCasa.getEndereco().length() != 0) count++;
+        if (newCasa.getDescricao() != null) count++;
+        if (newCasa.getEndereco() != null) count++;
         return count;
     }
 
@@ -758,6 +818,14 @@ public class Controller {
         if (newRegra.getData().length() != 0) count++;
         if (newRegra.getNome().length() != 0) count++;
         return count;
+    }
+
+    void atualizaCamposCasa(Casa updateCasa, Casa oldCasa){
+        if (updateCasa.getAluguel() == 0) updateCasa.setAluguel(oldCasa.getAluguel());
+        if (updateCasa.getDescricao() == null) updateCasa.setDescricao(oldCasa.getDescricao());
+        if (updateCasa.getEndereco() == null) updateCasa.setEndereco(oldCasa.getEndereco());
+        if (updateCasa.getFoto() == null) updateCasa.setFoto(oldCasa.getFoto());
+        if (updateCasa.getNome() == null) updateCasa.setNome(oldCasa.getNome());
     }
 
     void atualizaCamposTarefa(Tarefa updateTarefa, Tarefa oldTarefa) {
