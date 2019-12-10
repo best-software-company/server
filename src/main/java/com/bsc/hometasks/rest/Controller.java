@@ -140,6 +140,37 @@ public class Controller {
                 "}").build();
     }
 
+    @Path("/users/home")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response searchHomeId(@HeaderParam("token") String token) {
+        UsuarioDAO user = new UsuarioDAO();
+        Usuario userToken = user.buscaUsuarioToken(token);
+        if (userToken != null) {
+            int idCasaUserToken = userToken.getIdCasa();
+            if (idCasaUserToken != 0) {
+                List<Usuario> usuariosCasa = user.buscaUsuariosCasa(idCasaUserToken);
+                if (usuariosCasa.size() > 0) {
+                    for (Usuario usuario : usuariosCasa) {
+                        usuario.setSenha(null);
+                        usuario.setToken(null);
+                    }
+                    return Response.ok(usuariosCasa).build();
+
+                }
+                return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                        "\"error\": \"Nenhum usuário encontrado\"\n" +
+                        "}").build();
+            }
+            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                    "    \"error\": \"Usuário não está associado a uma casa\"\n" +
+                    "}").build();
+        }
+        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
+                " \"error\": \"Autenticação Necessária\"\n" +
+                "}").build();
+    }
+
     //testado
     @Path("/users")
     @PUT
@@ -531,6 +562,7 @@ public class Controller {
                 " \"error\": \"Autenticação Necessária\"\n" +
                 "}").build();
     }
+
     //testada
     @Path("/home")
     @POST

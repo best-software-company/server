@@ -228,4 +228,34 @@ public class UsuarioDAO {
 
 		return usuario;
 	}
+
+	/*Retorna uma lista com usuarios que estao na casa*/
+	public List<Usuario> buscaUsuariosCasa(int idCasa) {
+		String sql = "select * from Usuario where idCasa = "+idCasa;
+		ArrayList<Usuario> usuarios = new ArrayList<>();
+		try (Connection conexao = ConnectionFactory.getDBConnection();
+			 PreparedStatement stmt = conexao.prepareStatement(sql);
+			 ResultSet rs = stmt.executeQuery()) {
+			while (rs.next()) {
+				usuarios.add(new Usuario(
+						rs.getString("idUsuario"),
+						rs.getString("nome"),
+						rs.getString("data"),
+						rs.getString("genero"),
+						rs.getInt("pontos"),
+						rs.getString("telefone"),
+						rs.getString("senha"),
+						rs.getString("email"),
+						rs.getString("perfil"),
+						rs.getInt("idCasa"),
+						rs.getBlob("foto"),
+						rs.getString("token")));
+			}
+
+		} catch (SQLException ex) {
+			System.err.println(ex.toString());
+		}
+		return usuarios;
+	}
+
 }
