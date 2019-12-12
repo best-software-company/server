@@ -225,7 +225,7 @@ public class Controller {
         if (token != null) {
             Usuario userToken = user.buscaUsuarioToken(token);
             if (userToken != null) {
-                List<Tarefa> tarefas = tarefa.buscaTarefasUsuarioEstado(userToken.getIdUsuario(), estado);
+                List<Tarefa> tarefas = tarefa.buscaTarefasUsuario(userToken, estado);
                 if (tarefas.size() > 0) return Response.status(Response.Status.OK).entity(tarefas).build();
                 return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
                         "    \"error\": \"Nenhuma tarefa encontrada\"\n" +
