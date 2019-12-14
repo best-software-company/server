@@ -8,6 +8,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import javax.xml.transform.sax.SAXSource;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -221,7 +222,6 @@ public class Controller {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response searchTasks(@PathParam("estado") String estado, @HeaderParam("token") String token) {
-        UsuarioDAO user = new UsuarioDAO();
         if (token != null) {
             Usuario userToken = user.buscaUsuarioToken(token);
             if (userToken != null) {
@@ -244,7 +244,6 @@ public class Controller {
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     public Response addTask(Tarefa newTarefa, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
-        UsuarioDAO user = new UsuarioDAO();
         if (token != null) {
             Usuario userToken = user.buscaUsuarioToken(token);
             if (userToken != null) {
@@ -289,7 +288,11 @@ public class Controller {
                             String usuario = userToken.getIdUsuario();
                             String responsavel = oldTarefa.getIdResponsavel();
                             String relator = oldTarefa.getIdRelator();
+                            System.out.println("usuarioToken:" + usuario);
+                            System.out.println("usuarioResponsavel:" + responsavel);
+                            System.out.println("usuarioRelator:" + relator);
                             if ((usuario.compareTo(responsavel) == 0) || (usuario.compareTo(relator) == 0)) {
+                                System.out.println("If1");
                                 atualizaCamposTarefa(updateTarefa, oldTarefa);
                                 updateTarefa.setIdRelator(relator);
                                 if (tarefa.atualizaTarefa(updateTarefa) > 0) {
@@ -343,13 +346,13 @@ public class Controller {
                         "}").build();
             }
         }
-        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n"+
-                   " \"error\": \"Autenticação Necessária\"\n"+
-                   "}").
+        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
+                " \"error\": \"Autenticação Necessária\"\n" +
+                "}").
 
-    build();
+                build();
 
-}
+    }
 
     @Path("/comments")
     @POST
@@ -398,21 +401,21 @@ public class Controller {
             if (userToken != null) {
                 if (updateComentario.getIdComentario() != 0) {
                     Comentario oldComments = comentario.buscaComentarioById(updateComentario.getIdComentario());
-                    if(oldComments != null) {
+                    if (oldComments != null) {
                         String usuario = userToken.getIdUsuario();
                         String userComments = oldComments.getIdUsuario();
-                        if(usuario.compareTo(userComments) == 0) {
+                        if (usuario.compareTo(userComments) == 0) {
                             int count = verificaCamposComentario(updateComentario);
                             if (count != 0) {
                                 atualizaCamposComentario(updateComentario, oldComments);
                                 if (comentario.atualizaComentario(updateComentario) > 0) {
                                     return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
-                                                    "    \"resposta\": \"Comentario atualizado com sucesso\"\n" +
-                                                    "}").build();
+                                            "    \"resposta\": \"Comentario atualizado com sucesso\"\n" +
+                                            "}").build();
                                 }
                                 return Response.status(Response.Status.CONFLICT).entity("{\n" +
-                                                "    \"error\": \"Não foi possível atualizar comentario no banco.\"\n" +
-                                                "}").build();
+                                        "    \"error\": \"Não foi possível atualizar comentario no banco.\"\n" +
+                                        "}").build();
                             }
                             return Response.status(Response.Status.NOT_MODIFIED).entity("{\n" +
                                     "    \"error\": \"Comentário sem nenhum campo para alterar.\"\n" +
@@ -437,26 +440,24 @@ public class Controller {
     }
 
     //testada
-    @Path("/routines/{idUsuario}")
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response searchRoutines(@PathParam("idUsuario") String idUsuario, @HeaderParam("token") String token) {
-        UsuarioDAO user = new UsuarioDAO();
-        Usuario userToken = user.buscaUsuarioToken(token);
-        if (userToken != null) {
-            List<Rotina> rotinas = rotina.buscaRotinasUsuario(idUsuario);
-            if (rotinas.size() > 0)
-                return Response.status(Response.Status.OK).entity(rotinas).build();
-
-            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
-                    "    \"error\": \"Nenhuma rotina encontrada\"\n" +
-                    "}").build();
-        }
-        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
-                "    \"error\": \"Autenticação Necessária\"\n" +
-                "}").build();
-    }
-
+//    @Path("/routines")
+//    @GET
+//    @Produces(MediaType.APPLICATION_JSON)
+//    public Response searchRoutines(@HeaderParam("token") String token) {
+//        if (token != null) {
+//            Usuario userToken = user.buscaUsuarioToken(token);
+//            if (userToken != null) {
+//                List<Tarefa> tarefas = tarefa.buscaTarefasUsuario(userToken, estado);
+//                if (tarefas.size() > 0) return Response.status(Response.Status.OK).entity(tarefas).build();
+//                return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+//                        "    \"error\": \"Nenhuma tarefa encontrada\"\n" +
+//                        "}").build();
+//            }
+//        }
+//        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
+//                "    \"error\": \"Autenticação Necessária\"\n" +
+//                "}").build();
+//    }
     //testada
     ///de alguma forma, cria todos os jsons e caso o usuario nao preencha volta uma string vazia
     @Path("/routines")
@@ -607,19 +608,19 @@ public class Controller {
             int idCasa = updateCasa.getIdCasa();
             if (idCasa != 0) {
                 Casa oldCasa = casa.buscaCasa(idCasa);
-                if(oldCasa != null) {
+                if (oldCasa != null) {
                     int idCasaUserToken = userToken.getIdCasa();
                     String pefilUserToken = userToken.getPerfil();
                     if ((idCasa == idCasaUserToken) && (pefilUserToken.compareToIgnoreCase("responsavel") == 0)) {
-                       atualizaCamposCasa(updateCasa, oldCasa);
-                            if (casa.atualizaCasa(updateCasa) > 0) {
-                                return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
-                                        "    \"resposta\": \"Casa atualizada com sucesso\"\n" +
-                                        "}").build();
-                            }
-                            return Response.status(Response.Status.CONFLICT).entity("{\n" +
-                                    "\"error\": \"Não foi possível Atualizar a Casa no banco de dados\"\n" +
+                        atualizaCamposCasa(updateCasa, oldCasa);
+                        if (casa.atualizaCasa(updateCasa) > 0) {
+                            return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
+                                    "    \"resposta\": \"Casa atualizada com sucesso\"\n" +
                                     "}").build();
+                        }
+                        return Response.status(Response.Status.CONFLICT).entity("{\n" +
+                                "\"error\": \"Não foi possível Atualizar a Casa no banco de dados\"\n" +
+                                "}").build();
                     }
                     return Response.status(Response.Status.FORBIDDEN).entity("{\n" +
                             "    \"error\": \"Permissão Negada\"\n" +
@@ -707,23 +708,27 @@ public class Controller {
                 "}").build();
     }
 
-    @Path("/rules/{idRegraCasa}")
+    @Path("/rules")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response searchRules(@PathParam("idRegraCasa") String idRegraCasa, @HeaderParam("token") String token) {
-        UsuarioDAO user = new UsuarioDAO();
-        Usuario userToken = user.buscaUsuarioToken(token);
-        if (userToken != null) {
-            String log[] = idRegraCasa.split(":");
-
-            if (regra.buscaRegra(Integer.parseInt(log[0]), Integer.parseInt(log[1])) != null)
-                return Response.status(Response.Status.OK).entity(regra.buscaRegra(Integer.parseInt(log[0]), Integer.parseInt(log[1]))).build();
-
-            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
-                    "    \"error\": \"Nenhuma regra encontrada\"\n" +
-                    "}").build();
+    public Response searchRules(@HeaderParam("token") String token) {
+        if (token != null) {
+            Usuario userToken = user.buscaUsuarioToken(token);
+            if (userToken != null) {
+                int idCasa = userToken.getIdCasa();
+                if (idCasa != 0) {
+                    List<Regra> regras = regra.buscaRegrasCasa(userToken.getIdCasa());
+                    if (regras.size() > 0) return Response.status(Response.Status.OK).entity(regras).build();
+                    return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                            "    \"error\": \"Nenhuma regra encontrada\"\n" +
+                            "}").build();
+                }
+                return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                        "    \"error\": \"Usuário não possui casa\"\n" +
+                        "}").build();
+            }
         }
-        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
                 "    \"error\": \"Autenticação Necessária\"\n" +
                 "}").build();
     }
@@ -732,46 +737,89 @@ public class Controller {
     @POST
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
-    public Response addRule(Regra newRegra, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
-        UsuarioDAO user = new UsuarioDAO();
-        Usuario userToken = user.buscaUsuarioToken(token);
-        if (userToken != null) {
-            int count = verificaCamposRules(newRegra);
-            if (count == 5) {
-                if (regra.criaRegra(newRegra) > 0) {
-                    return Response.status(Response.Status.CREATED).entity(newRegra).build();
+    public Response addRule(Regra newRegra, @HeaderParam("token") String token) {
+        if (token != null) {
+            Usuario userToken = user.buscaUsuarioToken(token);
+            if (userToken != null) {
+                int idCasa = userToken.getIdCasa();
+                if (idCasa != 0) {
+                    int count = verificaCamposRules(newRegra);
+                    if (count == 3) {
+                        if (userToken.getPerfil().compareToIgnoreCase("responsavel") == 0) {
+                            newRegra.setEstado(true);
+                        }
+                        newRegra.setIdCasa(idCasa);
+                        newRegra.setIdUsuario(userToken.getIdUsuario());
+                        int idRegra = regra.criaRegra(newRegra);
+                        if (idRegra > 0) {
+                            newRegra.setIdRegra(idRegra);
+                            return Response.status(Response.Status.CREATED).entity(newRegra).build();
+                        }
+                        return Response.status(Response.Status.CONFLICT).entity("{\n" +
+                                "    \"error\": \"Não foi possível criar a Regra no banco\"\n" +
+                                "}").build();
+
+                    }
+                    return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                            "    \"error\": \"Atributos Obrigatórios - nome, descricao e data\"\n" +
+                            "}").build();
                 }
                 return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
-                        "    \"resposta\": \"\"Regra não pode ser criada\"\n" +
+                        "    \"error\": \"Usuário não possui casa\"\n" +
                         "}").build();
             }
-            return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
-                    "    \"error\": \"\"Atributos Obrigatórios faltando\"\n" +
-                    "}").build();
         }
-        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
                 "    \"error\": \"Autenticação Necessária\"\n" +
                 "}").build();
+
     }
 
     @Path("/rules")
     @PUT
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
-    public Response updateAccount(Regra updateReg, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
-        UsuarioDAO user = new UsuarioDAO();
-        Usuario userToken = user.buscaUsuarioToken(token);
-        if (userToken != null) {
-            if (regra.atualizaRegra(updateReg) > 0) {
-                return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
-                        "    \"resposta\": \"\"Regra atualizada com sucesso.\"\n" +
+    public Response updateAccount(Regra updateReg, @HeaderParam("token") String token) {
+        if (token != null) {
+            Usuario userToken = user.buscaUsuarioToken(token);
+            if (userToken != null) {
+                if (updateReg.getIdRegra() != 0) {
+                    int count = verificaCamposRules(updateReg);
+                    if (count != 0) {
+                        Regra oldRegra = regra.buscaRegra(updateReg.getIdRegra());
+                        if (oldRegra != null) {
+                            String userPerfil = userToken.getPerfil();
+                            atualizaCamposRegra(updateReg, oldRegra);
+                            if ((userPerfil.compareTo("responsavel") == 0)) {
+                                updateReg.setEstado(true);
+                            } else {
+                                updateReg.setEstado(false);
+                            }
+                            updateReg.setIdUsuario(userToken.getIdUsuario());
+                            if (regra.atualizaRegra(updateReg) > 0) {
+                                return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
+                                        "    \"resposta\": \"Regra atualizada com sucesso\"\n" +
+                                        "}").build();
+                            }
+                            return Response.status(Response.Status.CONFLICT).entity("{\n" +
+                                    "    \"error\": \"Não foi possível atualizar tarefa no banco.\"\n" +
+                                    "}").build();
+
+                        }
+                        return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                                "    \"error\": \"A Regra não encontrada\"\n" +
+                                "}").build();
+                    }
+                    return Response.status(Response.Status.NOT_MODIFIED).entity("{\n" +
+                            "    \"error\": \"Regra sem nenhum campo para alterar.\"\n" +
+                            "}").build();
+                }
+                return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                        "    \"error\": \"Atributo idRegra obrigatório\"\n" +
                         "}").build();
             }
-            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
-                    "    \"error\": \"\"Regra não encontrada.\"\n" +
-                    "}").build();
         }
-        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
                 "    \"error\": \"Autenticação Necessária\"\n" +
                 "}").build();
     }
@@ -844,15 +892,15 @@ public class Controller {
 
     int verificaCamposRules(Regra newRegra) {
         int count = 0;
-        if (newRegra.getDescricao().length() != 0) count++;
-        if (newRegra.getIdUsuario().length() != 0) count++;
-        if (newRegra.getIdCasa() != 0) count++;
-        if (newRegra.getData().length() != 0) count++;
-        if (newRegra.getNome().length() != 0) count++;
+        if (newRegra.getDescricao() != null) count++;
+        //if (newRegra.getIdUsuario() != null) count++;
+        //if (newRegra.getIdCasa() != 0) count++;
+        if (newRegra.getData() != null) count++;
+        if (newRegra.getNome() != null) count++;
         return count;
     }
 
-    void atualizaCamposCasa(Casa updateCasa, Casa oldCasa){
+    void atualizaCamposCasa(Casa updateCasa, Casa oldCasa) {
         if (updateCasa.getAluguel() == 0) updateCasa.setAluguel(oldCasa.getAluguel());
         if (updateCasa.getDescricao() == null) updateCasa.setDescricao(oldCasa.getDescricao());
         if (updateCasa.getEndereco() == null) updateCasa.setEndereco(oldCasa.getEndereco());
@@ -878,6 +926,13 @@ public class Controller {
         updateComentario.setIdComentario(oldComentario.getIdComentario());
         updateComentario.setIdUsuario(oldComentario.getIdUsuario());
         updateComentario.setIdTarefa(oldComentario.getIdTarefa());
+    }
+
+    void atualizaCamposRegra(Regra updateReg, Regra oldRegra) {
+        if (updateReg.getData() == null) updateReg.setData(oldRegra.getData());
+        if (updateReg.getDescricao() == null) updateReg.setDescricao(oldRegra.getDescricao());
+        if (updateReg.getNome() == null) updateReg.setNome(oldRegra.getNome());
+        if (updateReg.getValor() == 0) updateReg.setValor(oldRegra.getValor());
     }
 
     public String getToken(String credentials) {

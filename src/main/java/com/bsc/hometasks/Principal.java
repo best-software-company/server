@@ -109,12 +109,12 @@ public class Principal {
 
         RegraDAO dao = new RegraDAO();
         regra.setIdRegra(dao.criaRegra(regra));
-        System.out.println(dao.buscaRegra(regra.getIdRegra(),regra.getIdCasa()));
+        //System.out.println(dao.buscaRegra(regra.getIdRegra(),regra.getIdCasa()));
         regra.setDescricao("LALAALAL");
         dao.atualizaRegra(regra);
-        System.out.println(dao.buscaRegra(regra.getIdRegra(),regra.getIdCasa()));
+        //System.out.println(dao.buscaRegra(regra.getIdRegra(),regra.getIdCasa()));
         dao.removeRegra(regra.getIdRegra(),regra.getIdCasa());
-        System.out.println(dao.buscaRegra(regra.getIdRegra(),regra.getIdCasa()));
+        //System.out.println(dao.buscaRegra(regra.getIdRegra(),regra.getIdCasa()));
         for(Regra r : dao.buscaRegrasCasa(1)){
             System.out.println(r);
         }

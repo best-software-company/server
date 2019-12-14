@@ -45,7 +45,7 @@ public class RegraDAO {
 
 	public int atualizaRegra(Regra regra) {
 		String sql = "update Regra set descricao = ?, estado = ?," +
-				"valor = ?, idUsuario = ?,idCasa = ?, data = ?, nome = ? where idRegra = ? and idCasa = ?";
+				"valor = ?, idUsuario = ?, data = ?, nome = ? where idRegra = ?";
 
 		int rows = 0;
 		try (Connection conexao = ConnectionFactory.getDBConnection();
@@ -55,12 +55,10 @@ public class RegraDAO {
 			stmt.setBoolean(2,regra.isEstado());
 			stmt.setInt(3, regra.getValor());
 			stmt.setString(4, regra.getIdUsuario());
-			stmt.setInt(5,regra.getIdCasa());
-			stmt.setString(6, regra.getData());
-			stmt.setString(7,regra.getNome());
-			stmt.setInt(8,regra.getIdRegra());
-			stmt.setInt(9,regra.getIdCasa());
-
+			stmt.setString(5, regra.getData());
+			stmt.setString(6,regra.getNome());
+			stmt.setInt(7,regra.getIdRegra());
+			System.out.println("linhas " + rows);
 			rows = stmt.executeUpdate();
 
 		} catch (SQLException ex) {
@@ -69,14 +67,13 @@ public class RegraDAO {
 		return rows;
 	}
 
-	public Regra buscaRegra(int idRegra, int idCasa) {
-		String sql = "select * from  Regra where idRegra = ? and idCasa = ?";
+	public Regra buscaRegra(int idRegra) {
+		String sql = "select * from  Regra where idRegra = ?";
 		Regra regra = null;
 		try (Connection conexao = ConnectionFactory.getDBConnection();
 			 PreparedStatement stmt = conexao.prepareStatement(sql)) {
 
 			stmt.setInt(1, idRegra);
-			stmt.setInt(2, idCasa);
 			ResultSet rs = stmt.executeQuery();
 
 			if(rs.next()){
