@@ -35,6 +35,8 @@ Documentação disponível em [HomeTasks - Docs](https://github.com/best-softwar
 
 ### Configurando Banco de Dados
 
+> Ainda não inserido arquivo de configuração banco de dados. Deve-se alterar no código.
+
 1. Edite o arquivo `config.properties`
 
 ```properties
