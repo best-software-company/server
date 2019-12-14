@@ -120,23 +120,23 @@ public class Principal {
         }
     }
 
-    public static void testeRotina(){
-        RotinaDAO dao = new RotinaDAO();
-        Rotina rotina = dao.buscaRotina(3);
-
-        System.out.println(dao.buscaRotina(rotina.getTarefa().getIdTarefa()));
-        //dao.removeRotina(rotina.getIdRotina());
-        //System.out.println(dao.buscaRotina(rotina.getIdRotina()));
-
-        System.out.println("-----------------");
-        List<Rotina> rotinas = dao.buscaRotinasUsuario("luluzinha");
-        System.out.println("size" + rotinas.size());
-        for (Rotina r : rotinas){
-            System.out.println(r);
-        }
-
-
-    }
+//    public static void testeRotina(){
+//        RotinaDAO dao = new RotinaDAO();
+//        Rotina rotina = dao.buscaRotina(3);
+//
+//        //System.out.println(dao.buscaRotina(rotina.getTarefa().getIdTarefa()));
+//        //dao.removeRotina(rotina.getIdRotina());
+//        //System.out.println(dao.buscaRotina(rotina.getIdRotina()));
+//
+//        System.out.println("-----------------");
+//        List<Rotina> rotinas = dao.buscaRotinasUsuario("luluzinha");
+//        System.out.println("size" + rotinas.size());
+//        for (Rotina r : rotinas){
+//            System.out.println(r);
+//        }
+//
+//
+//    }
     public static void testeConvite() {
         UsuarioDAO daoUsuario = new UsuarioDAO();
         Usuario roque0 = daoUsuario.buscaUsuario("Roque0");
@@ -230,7 +230,7 @@ public class Principal {
             //testePagamento();
             //testeTarefa();
             //testeRegra();
-            testeRotina();
+            //testeRotina();
             //testeConvite();
             //testeAprova();
             //testeUsuarioRotina();

@@ -24,6 +24,7 @@ public class Controller {
     PagamentoDAO pagamento = new PagamentoDAO();
     RegraDAO regra = new RegraDAO();
     ComentarioDAO comentario = new ComentarioDAO();
+    UsuarioRotinaDAO userRotinas = new UsuarioRotinaDAO();
 
     //testado
     @Path("/login")
@@ -439,75 +440,80 @@ public class Controller {
                 "}").build();
     }
 
-    //testada
-//    @Path("/routines")
-//    @GET
-//    @Produces(MediaType.APPLICATION_JSON)
-//    public Response searchRoutines(@HeaderParam("token") String token) {
-//        if (token != null) {
-//            Usuario userToken = user.buscaUsuarioToken(token);
-//            if (userToken != null) {
-//                List<Tarefa> tarefas = tarefa.buscaTarefasUsuario(userToken, estado);
-//                if (tarefas.size() > 0) return Response.status(Response.Status.OK).entity(tarefas).build();
-//                return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
-//                        "    \"error\": \"Nenhuma tarefa encontrada\"\n" +
-//                        "}").build();
-//            }
-//        }
-//        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
-//                "    \"error\": \"Autenticação Necessária\"\n" +
-//                "}").build();
-//    }
+    //    //testada
+    @Path("/routines")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response searchRoutines(@HeaderParam("token") String token) {
+        Usuario userToken = user.buscaUsuarioToken(token);
+        if (userToken != null) {
+            List<Rotina> rotinas = rotina.buscaRotinasUsuario(userToken.getIdUsuario());
+            if (rotinas.size() > 0) {
+                return Response.status(Response.Status.OK).entity(rotinas).build();
+            }
+            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                    "\"error\": \"Nenhuma rotina encontrada\"\n" +
+                    "}").build();
+        }
+        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
+                "\"error\": \"Autenticação Necessária\"\n").build();
+    }
+
+
     //testada
     ///de alguma forma, cria todos os jsons e caso o usuario nao preencha volta uma string vazia
     @Path("/routines")
     @POST
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
-    public Response addRoutines(Rotina newRotina, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
-        UsuarioDAO user = new UsuarioDAO();
+    public Response addRoutines(Rotina newRotina, @HeaderParam("token") String token) {
         Usuario userToken = user.buscaUsuarioToken(token);
         if (userToken != null) {
             int count = verificaCamposR(newRotina);
             if (count == 3) {
-                if (rotina.criaRotina(newRotina) > 0) {
-                    return Response.status(Response.Status.CREATED).entity(rotina.buscaRotina(rotina.criaRotina(newRotina))).build();
+                newRotina.setIdUsuario(userToken.getIdUsuario());
+                int idRotina = rotina.criaRotina(newRotina);
+                if (idRotina > 0) {
+                    newRotina.setIdRotina(idRotina);
+                    return Response.status(Response.Status.CREATED).entity(newRotina).build();
                 }
-                return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
-                        "    \"error\": \"\"Rotina não pode ser criada\"\n" +
+                return Response.status(Response.Status.CONFLICT).entity("{\n" +
+                        "\"error\": \"Não foi possível criar a Rotina no banco de dados\"\n" +
                         "}").build();
             }
             return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
-                    "    \"error\": \"\"Atributos Obrigatórios - Nome e validade\"\n" +
+                    "    \"error\": \"Atributos Obrigatórios - nome, descricao e validade\"\n" +
                     "}").build();
         }
-        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
                 "    \"error\": \"Autenticação Necessária\"\n" +
                 "}").build();
     }
 
     //testada
-    @Path("/routines")
-    @PUT
-    @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
-    @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
-    public Response updateRoutines(Rotina updateRotina, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
-        UsuarioDAO user = new UsuarioDAO();
-        Usuario userToken = user.buscaUsuarioToken(token);
-        if (userToken != null) {
-            if (rotina.atualizaRotina(updateRotina) > 0) {
-                return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
-                        "    \"resposta\": \"Rotina atualizada com sucesso.\"\n" +
-                        "}").build();
-            }
-            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
-                    "    \"error\": \"\"Rotina não encontrada.\"\n" +
-                    "}").build();
-        }
-        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
-                "    \"error\": \"Autenticação Necessária\"\n" +
-                "}").build();
-    }
+//    @Path("/routines")
+//    @PUT
+//    @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
+//    @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
+//    public Response updateRoutines(Rotina updateRotina, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
+//        UsuarioDAO user = new UsuarioDAO();
+//        Usuario userToken = user.buscaUsuarioToken(token);
+//        if (userToken != null) {
+//            int count
+//            if()
+//            if (rotina.atualizaRotina(updateRotina) > 0) {
+//                return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
+//                        "    \"resposta\": \"Rotina atualizada com sucesso.\"\n" +
+//                        "}").build();
+//            }
+//            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+//                    "    \"error\": \"\"Rotina não encontrada.\"\n" +
+//                    "}").build();
+//        }
+//        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+//                "    \"error\": \"Autenticação Necessária\"\n" +
+//                "}").build();
+//    }
 
     //testada
     @Path("/home/list/{name_home}")
@@ -855,9 +861,9 @@ public class Controller {
     int verificaCamposR(Rotina newRotina) {
         int count = 0;
         //ve se ele preencheu todas as paradas
-        if (newRotina.getTarefa().getIdTarefa() != 0) count++;
-        if (newRotina.getValidade().length() != 0) count++;
-        if (verificaCamposT(newRotina.getTarefa()) == 6) count++;
+        if (newRotina.getNome() != null) count++;
+        if (newRotina.getValidade() != null) count++;
+        if (newRotina.getDescricao() != null) count++;
         return count;
     }
 
