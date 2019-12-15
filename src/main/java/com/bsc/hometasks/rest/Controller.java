@@ -607,7 +607,7 @@ public class Controller {
     @PUT
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
-    public Response updateRoutines(Casa updateCasa, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
+    public Response updateHome(Casa updateCasa, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
         UsuarioDAO user = new UsuarioDAO();
         Usuario userToken = user.buscaUsuarioToken(token);
         if (userToken != null) {
@@ -754,6 +754,9 @@ public class Controller {
                         if (userToken.getPerfil().compareToIgnoreCase("responsavel") == 0) {
                             newRegra.setEstado(true);
                         }
+                        else{
+                            newRegra.setEstado(false);
+                        }
                         newRegra.setIdCasa(idCasa);
                         newRegra.setIdUsuario(userToken.getIdUsuario());
                         int idRegra = regra.criaRegra(newRegra);
@@ -796,7 +799,7 @@ public class Controller {
                         if (oldRegra != null) {
                             String userPerfil = userToken.getPerfil();
                             atualizaCamposRegra(updateReg, oldRegra);
-                            if ((userPerfil.compareTo("responsavel") == 0)) {
+                            if ((userPerfil.compareToIgnoreCase(    "responsavel") == 0)) {
                                 updateReg.setEstado(true);
                             } else {
                                 updateReg.setEstado(false);
