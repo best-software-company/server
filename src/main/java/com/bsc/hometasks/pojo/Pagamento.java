@@ -5,19 +5,21 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 public class Pagamento {
 
-	private int idPagamento;
+
 
 	public Pagamento() {
 	}
 
+    private int idPagamento;
 	private String idDevedor;
 	private String idCredor;
 	private int juros;
-	private int valor;
+	private float valor;
 	private String data;
 	private String descricao;
+	private boolean pago;
 
-	public Pagamento(int idPagamento, String idDevedor, String idCredor, int juros, int valor, String data, String descricao) {
+	public Pagamento(int idPagamento, String idDevedor, String idCredor, int juros, float valor, String data, String descricao, boolean pago) {
 		this.idPagamento = idPagamento;
 		this.idDevedor = idDevedor;
 		this.idCredor = idCredor;
@@ -25,9 +27,10 @@ public class Pagamento {
 		this.valor = valor;
 		this.data = data;
 		this.descricao = descricao;
+		this.pago = pago;
 	}
 
-	public Pagamento(String idDevedor, String idCredor, int juros, int valor, String data, String descricao) {
+	public Pagamento(String idDevedor, String idCredor, int juros, float valor, String data, String descricao) {
 		this.idDevedor = idDevedor;
 		this.idCredor = idCredor;
 		this.juros = juros;
@@ -36,7 +39,15 @@ public class Pagamento {
 		this.descricao = descricao;
 	}
 
-	public String getIdDevedor() {
+    public boolean isPago() {
+        return pago;
+    }
+
+    public void setPago(boolean pago) {
+        this.pago = pago;
+    }
+
+    public String getIdDevedor() {
 		return idDevedor;
 	}
 
@@ -60,11 +71,11 @@ public class Pagamento {
 		this.juros = juros;
 	}
 
-	public int getValor() {
+	public float getValor() {
 		return valor;
 	}
 
-	public void setValor(int valor) {
+	public void setValor(float valor) {
 		this.valor = valor;
 	}
 

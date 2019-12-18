@@ -14,123 +14,126 @@ import java.util.List;
 import static java.sql.Statement.RETURN_GENERATED_KEYS;
 
 public class RotinaDAO {
-	private TarefaDAO dao = new TarefaDAO();
+    private TarefaDAO dao = new TarefaDAO();
 
 
-	public int criaRotina(Rotina rotina) {
-		int ret = dao.criaTarefa(rotina.getTarefa());
-		if (ret == 0){
-			return 0;
-		}
-		String sql = "insert into Rotina (idTarefa,validade,alternar) values (?,?,?)";
-		int id = 0;
-		try (Connection conexao = ConnectionFactory.getDBConnection();
-			 PreparedStatement stmt = conexao.prepareStatement(sql,RETURN_GENERATED_KEYS)) {
+    public int criaRotina(Rotina rotina) {
+        //int ret = dao.criaTarefa(rotina.getTarefa());
+//		if (ret == 0){
+//			return 0;
+//		}
+        String sql = "insert into Rotina (validade,alternar,nome,descricao,idUsuario) values (?,?,?,?,?)";
+        int id = 0;
+        try (Connection conexao = ConnectionFactory.getDBConnection();
+             PreparedStatement stmt = conexao.prepareStatement(sql, RETURN_GENERATED_KEYS)) {
 
-			stmt.setInt(1, rotina.getTarefa().getIdTarefa());
-			stmt.setString(2, rotina.getValidade());
-			stmt.setBoolean(3, rotina.isAlternar());
-			stmt.execute();
+            stmt.setString(1, rotina.getValidade());
+            stmt.setBoolean(2, rotina.isAlternar());
+            stmt.setString(3, rotina.getNome());
+            stmt.setString(4, rotina.getDescricao());
+            stmt.setString(5, rotina.getIdUsuario());
 
+            stmt.execute();
 
-			ResultSet rs = stmt.getGeneratedKeys();
-			if (rs.next()){
-				id = rs.getInt(1);
-			}
-			rs.close();
+            ResultSet rs = stmt.getGeneratedKeys();
+            if (rs.next()) {
+                id = rs.getInt(1);
+            }
+            rs.close();
 
-		} catch (SQLException ex) {
-			System.err.println(ex.toString());
-		}
-		return id;
-	}
+        } catch (SQLException ex) {
+            System.err.println(ex.toString());
+        }
+        return id;
+    }
 
-	public int atualizaRotina(Rotina rotina) {
-		dao.atualizaTarefa(rotina.getTarefa());
-		String sql = "update Rotina set validade = ?, alternar = ? where idTarefa = ?";
-		int rows = 0;
-		try (Connection conexao = ConnectionFactory.getDBConnection();
-			 PreparedStatement stmt = conexao.prepareStatement(sql,RETURN_GENERATED_KEYS)) {
+//	public int atualizaRotina(Rotina rotina) {
+//		dao.atualizaTarefa(rotina.getTarefa());
+//		String sql = "update Rotina set validade = ?, alternar = ? where idTarefa = ?";
+//		int rows = 0;
+//		try (Connection conexao = ConnectionFactory.getDBConnection();
+//			 PreparedStatement stmt = conexao.prepareStatement(sql,RETURN_GENERATED_KEYS)) {
+//
+//			stmt.setString(1, rotina.getValidade());
+//			stmt.setBoolean(2, rotina.isAlternar());
+//			stmt.setInt(3,rotina.getTarefa().getIdTarefa());
+//			rows = stmt.executeUpdate();
+//
+//		} catch (SQLException ex) {
+//			System.err.println(ex.toString());
+//		}
+//		return rows;
+//	}
 
-			stmt.setString(1, rotina.getValidade());
-			stmt.setBoolean(2, rotina.isAlternar());
-			stmt.setInt(3,rotina.getTarefa().getIdTarefa());
-			rows = stmt.executeUpdate();
+//    public Rotina buscaRotina(int idRotina) {
+//        String sql = "select * from  Rotina where idTarefa = ?";
+//        Rotina rotina = null;
+//        try (Connection conexao = ConnectionFactory.getDBConnection();
+//             PreparedStatement stmt = conexao.prepareStatement(sql)) {
+//
+//            stmt.setInt(1, idRotina);
+//            ResultSet rs = stmt.executeQuery();
+//
+//            if (rs.next()) {
+//                Tarefa tarefa = dao.buscaTarefa(rs.getInt("idTarefa"));
+//                rotina = new Rotina(
+//                        rs.getString("validade"),
+//                        rs.getBoolean("alternar"),
+//                        tarefa);
+//            }
+//
+//            rs.close();
+//
+//        } catch (SQLException ex) {
+//            System.err.println(ex.toString());
+//        }
+//        return rotina;
+//    }
 
-		} catch (SQLException ex) {
-			System.err.println(ex.toString());
-		}
-		return rows;
-	}
+    public int removeRotina(int idRotina) {
+        String sql = "delete from  Rotina where idRotina = ?";
+        int rows = 0;
+        try (Connection conexao = ConnectionFactory.getDBConnection();
+             PreparedStatement stmt = conexao.prepareStatement(sql)) {
 
-	public Rotina buscaRotina(int idRotina) {
-		String sql = "select * from  Rotina where idTarefa = ?";
-		Rotina rotina = null;
-		try (Connection conexao = ConnectionFactory.getDBConnection();
-			 PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            stmt.setInt(1, idRotina);
+            rows = stmt.executeUpdate();
 
-			stmt.setInt(1, idRotina);
-			ResultSet rs = stmt.executeQuery();
+        } catch (SQLException ex) {
+            System.err.println(ex.toString());
+        }
+        return rows;
+    }
 
-			if(rs.next()){
-				Tarefa tarefa = dao.buscaTarefa(rs.getInt("idTarefa"));
-				rotina = new Rotina(
-						rs.getString("validade"),
-						rs.getBoolean("alternar"),
-						tarefa);
-			}
+    /*Retorna uma lista com as rotinas de um usuário*/
+    public List<Rotina> buscaRotinasUsuario(String idUsuario) {
+        List<Rotina> rotinas = new ArrayList<>();
 
-			rs.close();
+        String sql = "select * from  Rotina where idUsuario = ?";
+        try (Connection conexao = ConnectionFactory.getDBConnection();
+             PreparedStatement stmt = conexao.prepareStatement(sql)) {
 
-		} catch (SQLException ex) {
-			System.err.println(ex.toString());
-		}
-		return  rotina;
-	}
+            stmt.setString(1, idUsuario);
+            ResultSet rs = stmt.executeQuery();
 
-	public int removeRotina (int idTarefa){
-		String sql = "delete from  Rotina where idTarefa = ?";
-		int rows = 0;
-		try (Connection conexao = ConnectionFactory.getDBConnection();
-			 PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            while (rs.next()) {
+                rotinas.add(new Rotina(
+                        rs.getString("validade"),
+                        rs.getBoolean("alternar"),
+                        rs.getInt("idRotina"),
+                        rs.getString("nome"),
+                        rs.getString("descricao"),
+                        rs.getString("idUsuario")
+                        ));
+            }
 
-			stmt.setInt(1, idTarefa);
-			rows = stmt.executeUpdate();
+            rs.close();
 
-		} catch (SQLException ex) {
-			System.err.println(ex.toString());
-		}
-		return rows;
-	}
+        } catch (SQLException ex) {
+            System.err.println(ex.toString());
+        }
 
-	/*Retorna uma lista com as rotinas de um usuário*/
-	public List<Rotina> buscaRotinasUsuario(String idUsuario){
-		List<Rotina> rotinas = new ArrayList<>();
-
-		TarefaDAO dao = new TarefaDAO();
-		List<Tarefa> tarefas = dao.buscaTarefasUsuarioEstado(idUsuario,"aberta");
-		for (Tarefa t : tarefas){
-			String sql = "select * from  Rotina where idTarefa = ?";
-			try (Connection conexao = ConnectionFactory.getDBConnection();
-				 PreparedStatement stmt = conexao.prepareStatement(sql)) {
-
-				stmt.setInt(1, t.getIdTarefa());
-				ResultSet rs = stmt.executeQuery();
-
-				while(rs.next()){
-					rotinas.add(new Rotina(
-							rs.getString("validade"),
-							rs.getBoolean("alternar"),
-							t));
-				}
-
-				rs.close();
-
-			} catch (SQLException ex) {
-				System.err.println(ex.toString());
-			}
-		}
-		return  rotinas;
-	}
+        return rotinas;
+    }
 
 }
