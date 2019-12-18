@@ -265,10 +265,18 @@ public class Controller {
                                 int idTarefa = tarefa.criaTarefa(newTarefa);
                                 if (idTarefa > 0) {
                                     int totalTarefasUser = userResponsavel.getTotalTarefas();
+                                    int tarefasAvaliadas = userResponsavel.getTarefasAvaliadas();
                                     totalTarefasUser++;
+                                    if (totalTarefasUser == 0) totalTarefasUser++;
+                                    int pontos = tarefasAvaliadas;
                                     userResponsavel.setTotalTarefas(totalTarefasUser);
+                                    userResponsavel.setPontos(pontos);
+                                    user.atualizaUsuario(userResponsavel);
+
+
                                     user.atualizaUsuario(userResponsavel);
                                     newTarefa.setIdTarefa(idTarefa);
+
                                     return Response.status(Response.Status.CREATED).entity(newTarefa).build();
                                 }
                                 return Response.status(Response.Status.CONFLICT).entity("{\n" +
@@ -341,7 +349,7 @@ public class Controller {
                                     int tarefasAvaliadas = userTarefa.getTarefasAvaliadas();
                                     tarefasAvaliadas++;
                                     if (totalTarefas == 0) totalTarefas++;
-                                    int pontos = (tarefasAvaliadas/totalTarefas)*100;
+                                    int pontos = tarefasAvaliadas;
                                     userTarefa.setTarefasAvaliadas(tarefasAvaliadas);
                                     userTarefa.setPontos(pontos);
                                     user.atualizaUsuario(userTarefa);
