@@ -313,18 +313,21 @@ public class Controller {
                     if (count != 0) {
                         Tarefa oldTarefa = tarefa.buscaTarefa(updateTarefa.getIdTarefa());
                         if (oldTarefa != null) {
-                            String usuario = userToken.getIdUsuario();
-                            String responsavel = oldTarefa.getIdResponsavel();
-                            String relator = oldTarefa.getIdRelator();
-                            if ((usuario.compareTo(responsavel) == 0) || (usuario.compareTo(relator) == 0)) {
+                            int idCasaUserToken = userToken.getIdCasa();
+                            String idResponsavel = oldTarefa.getIdResponsavel();
+                            String idRelator = oldTarefa.getIdRelator();
+                            Usuario relator = user.buscaUsuario(idRelator);
+                            Usuario responsavel = user.buscaUsuario(idResponsavel);
+                            if ((idCasaUserToken == relator.getIdCasa()) || (idCasaUserToken == responsavel.getIdCasa())) {
                                 atualizaCamposTarefa(updateTarefa, oldTarefa, userToken);
                                 String estado = updateTarefa.getEstado();
                                 boolean repasse = updateTarefa.isRepasse();
+                                Float valor = updateTarefa.getValor();
                                 if(estado.compareToIgnoreCase("avaliada") == 0){
-                                    if (repasse){
+                                    if ((repasse == true) && (valor != 0)){
                                         String idDevedor = updateTarefa.getIdRelator();
                                         String idCredor = updateTarefa.getIdResponsavel();
-                                        Float valor = updateTarefa.getValor();
+
                                         Calendar c = Calendar.getInstance();
                                         Date date = c.getTime();
                                         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -337,6 +340,7 @@ public class Controller {
                                     int totalTarefas = userTarefa.getTotalTarefas();
                                     int tarefasAvaliadas = userTarefa.getTarefasAvaliadas();
                                     tarefasAvaliadas++;
+                                    if (totalTarefas == 0) totalTarefas++;
                                     int pontos = (tarefasAvaliadas/totalTarefas)*100;
                                     userTarefa.setTarefasAvaliadas(tarefasAvaliadas);
                                     userTarefa.setPontos(pontos);
