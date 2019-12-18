@@ -12,7 +12,11 @@ import javax.xml.transform.sax.SAXSource;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Base64;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 @Path("/")
@@ -191,6 +195,9 @@ public class Controller {
                         }
                         int count = verificaCampos(updateUser);
                         if (count >= 8) {
+                            updateUser.setPontos(userToken.getPontos());
+                            updateUser.setTotalTarefas(userToken.getTotalTarefas());
+                            updateUser.setTarefasAvaliadas(userToken.getTarefasAvaliadas());
                             if (user.atualizaUsuario(updateUser) > 0) {
                                 return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
                                         "    \"resposta\": \"\"Usuário atualizado com sucesso.\"\n" +
@@ -249,15 +256,35 @@ public class Controller {
             Usuario userToken = user.buscaUsuarioToken(token);
             if (userToken != null) {
                 int count = verificaCamposT(newTarefa);
-                if (count == 5) {
-                    newTarefa.setIdRelator(userToken.getIdUsuario());
-                    int idTarefa = tarefa.criaTarefa(newTarefa);
-                    if (idTarefa > 0) {
-                        newTarefa.setIdTarefa(idTarefa);
-                        return Response.status(Response.Status.CREATED).entity(newTarefa).build();
+                if (count >= 5) {
+                    if (userToken.getIdCasa() != 0) {
+                        newTarefa.setIdRelator(userToken.getIdUsuario());
+                        Usuario userResponsavel = user.buscaUsuario(newTarefa.getIdResponsavel());
+                        if (userResponsavel != null) {
+                            if(userResponsavel.getIdCasa() == userToken.getIdCasa()) {
+                                int idTarefa = tarefa.criaTarefa(newTarefa);
+                                if (idTarefa > 0) {
+                                    int totalTarefasUser = userResponsavel.getTotalTarefas();
+                                    totalTarefasUser++;
+                                    userResponsavel.setTotalTarefas(totalTarefasUser);
+                                    user.atualizaUsuario(userResponsavel);
+                                    newTarefa.setIdTarefa(idTarefa);
+                                    return Response.status(Response.Status.CREATED).entity(newTarefa).build();
+                                }
+                                return Response.status(Response.Status.CONFLICT).entity("{\n" +
+                                        "    \"error\": \"Não foi possível criar a tarefa no banco.\"\n" +
+                                        "}").build();
+                            }
+                            return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                                    "    \"error\": \"Usuário responsável pela tarefa não está na mesma casa\"\n" +
+                                    "}").build();
+                        }
+                        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                                "    \"error\": \"Usuário responsável pela tarefa não encontrado\"\n" +
+                                "}").build();
                     }
                     return Response.status(Response.Status.CONFLICT).entity("{\n" +
-                            "    \"error\": \"Não foi possível criar a tarefa no banco. idResponsavel inválido\"\n" +
+                            "    \"error\": \"Usuário não está associado a uma casa\"\n" +
                             "}").build();
                 }
                 return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
@@ -289,13 +316,32 @@ public class Controller {
                             String usuario = userToken.getIdUsuario();
                             String responsavel = oldTarefa.getIdResponsavel();
                             String relator = oldTarefa.getIdRelator();
-                            System.out.println("usuarioToken:" + usuario);
-                            System.out.println("usuarioResponsavel:" + responsavel);
-                            System.out.println("usuarioRelator:" + relator);
                             if ((usuario.compareTo(responsavel) == 0) || (usuario.compareTo(relator) == 0)) {
-                                System.out.println("If1");
-                                atualizaCamposTarefa(updateTarefa, oldTarefa);
-                                updateTarefa.setIdRelator(relator);
+                                atualizaCamposTarefa(updateTarefa, oldTarefa, userToken);
+                                String estado = updateTarefa.getEstado();
+                                boolean repasse = updateTarefa.isRepasse();
+                                if(estado.compareToIgnoreCase("avaliada") == 0){
+                                    if (repasse){
+                                        String idDevedor = updateTarefa.getIdRelator();
+                                        String idCredor = updateTarefa.getIdResponsavel();
+                                        Float valor = updateTarefa.getValor();
+                                        Calendar c = Calendar.getInstance();
+                                        Date date = c.getTime();
+                                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                                        String data = sdf.format(date);
+                                        String descricao = "Pagamento referente a " + updateTarefa.getNome();
+                                        pagamento.criaPagamento(new Pagamento(
+                                                0,idDevedor, idCredor, 0, valor,data,descricao, false));
+                                    }
+                                    Usuario userTarefa = user.buscaUsuario(updateTarefa.getIdResponsavel());
+                                    int totalTarefas = userTarefa.getTotalTarefas();
+                                    int tarefasAvaliadas = userTarefa.getTarefasAvaliadas();
+                                    tarefasAvaliadas++;
+                                    int pontos = (tarefasAvaliadas/totalTarefas)*100;
+                                    userTarefa.setTarefasAvaliadas(tarefasAvaliadas);
+                                    userTarefa.setPontos(pontos);
+                                    user.atualizaUsuario(userTarefa);
+                                }
                                 if (tarefa.atualizaTarefa(updateTarefa) > 0) {
                                     return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
                                             "    \"resposta\": \"Tarefa atualizada com sucesso\"\n" +
@@ -646,22 +692,21 @@ public class Controller {
     }
 
 
-    @Path("/account/{pagCredDev}")
+    @Path("/account")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response searchConta(@PathParam("pagCredDev") String pagCredDev, @HeaderParam("token") String token) {
-        String log[] = pagCredDev.split(":");
-        UsuarioDAO user = new UsuarioDAO();
-        Usuario userToken = user.buscaUsuarioToken(token);
-        if (userToken != null) {
-            if (pagamento.buscaPagamento(Integer.parseInt(log[0]), log[1], log[2]) != null)
-                return Response.status(Response.Status.OK).entity(pagamento.buscaPagamento(Integer.parseInt(log[0]), log[1], log[2])).build();
-
-            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
-                    "    \"error\": \"Nenhum pagamento encontrado\"\n" +
-                    "}").build();
+    public Response searchConta(@HeaderParam("token") String token) {
+        if (token != null) {
+            Usuario userToken = user.buscaUsuarioToken(token);
+            if (userToken != null) {
+                List<Pagamento> pagamentos = pagamento.buscaPagamento(userToken.getIdUsuario());
+                if (pagamentos.size() > 0) return Response.status(Response.Status.OK).entity(pagamentos).build();
+                return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                        "    \"error\": \"Usuário não possui nenhum pagamento em aberto\"\n" +
+                        "}").build();
+            }
         }
-        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
                 "    \"error\": \"Autenticação Necessária\"\n" +
                 "}").build();
     }
@@ -671,22 +716,22 @@ public class Controller {
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     public Response addAccount(Pagamento newPagamento, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
-        UsuarioDAO user = new UsuarioDAO();
-        Usuario userToken = user.buscaUsuarioToken(token);
-        if (userToken != null) {
-            int count = verificaCamposP(newPagamento);
-            if (count == 3) {
-                if (pagamento.criaPagamento(newPagamento) > 0) {
-                    return Response.status(Response.Status.CREATED).entity(pagamento.buscaPagamento(newPagamento.getIdPagamento(), newPagamento.getIdCredor(), newPagamento.getIdDevedor())).build();
-                }
-                return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
-                        "    \"resposta\": \"\"Pagamento não pode ser criado\"\n" +
-                        "}").build();
-            }
-            return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
-                    "    \"error\": \"\"Atributos Obrigatórios - IdPagamento, IdCredor e IdDevedor\"\n" +
-                    "}").build();
-        }
+//        UsuarioDAO user = new UsuarioDAO();
+//        Usuario userToken = user.buscaUsuarioToken(token);
+//        if (userToken != null) {
+//            int count = verificaCamposP(newPagamento);
+//            if (count == 3) {
+//                if (pagamento.criaPagamento(newPagamento) > 0) {
+//                    return Response.status(Response.Status.CREATED).entity(pagamento.buscaPagamento(newPagamento.getIdPagamento(), newPagamento.getIdCredor(), newPagamento.getIdDevedor())).build();
+//                }
+//                return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+//                        "    \"resposta\": \"\"Pagamento não pode ser criado\"\n" +
+//                        "}").build();
+//            }
+//            return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+//                    "    \"error\": \"\"Atributos Obrigatórios - IdPagamento, IdCredor e IdDevedor\"\n" +
+//                    "}").build();
+//        }
         return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
                 "    \"error\": \"Autenticação Necessária\"\n" +
                 "}").build();
@@ -697,19 +742,32 @@ public class Controller {
     @Produces(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     @Consumes(MediaType.APPLICATION_JSON + "; charset=UTF-8")
     public Response updateAccount(Pagamento updatepag, @Context UriInfo uriInfo, @HeaderParam("token") String token) {
-        UsuarioDAO user = new UsuarioDAO();
         Usuario userToken = user.buscaUsuarioToken(token);
         if (userToken != null) {
-            if (pagamento.atualizaPagamento(updatepag) > 0) {
-                return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
-                        "    \"resposta\": \"\"Pagamento atualizado com sucesso.\"\n" +
+            int idPagamento = updatepag.getIdPagamento();
+            boolean pago = updatepag.isPago();
+            if (idPagamento != 0 || (!pago)) {
+                Pagamento oldPagamento = pagamento.buscaPagamentoById(idPagamento);
+                if(oldPagamento != null) {
+                    atualizaCamposPagamento(updatepag, oldPagamento);
+                    if (pagamento.atualizaPagamento(updatepag) > 0) {
+                        return Response.status(Response.Status.NO_CONTENT).entity("{\n" +
+                                "    \"resposta\": \"Pagamento atualizado com sucesso.\"\n" +
+                                "}").build();
+                    }
+                    return Response.status(Response.Status.CONFLICT).entity("{\n" +
+                            "\"error\": \"Não foi possível Atualizar a Pagamento no banco de dados\"\n" +
+                            "}").build();
+                }
+                return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
+                        "    \"error\": \"Pagamento não encontrado\"\n" +
                         "}").build();
             }
-            return Response.status(Response.Status.NOT_FOUND).entity("{\n" +
-                    "    \"error\": \"\"Pagamento não encontrado.\"\n" +
+            return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+                    "    \"error\": \"Campo idPagamento e pago são obrigatórios\"\n" +
                     "}").build();
         }
-        return Response.status(Response.Status.BAD_REQUEST).entity("{\n" +
+        return Response.status(Response.Status.UNAUTHORIZED).entity("{\n" +
                 "    \"error\": \"Autenticação Necessária\"\n" +
                 "}").build();
     }
@@ -753,8 +811,7 @@ public class Controller {
                     if (count == 3) {
                         if (userToken.getPerfil().compareToIgnoreCase("responsavel") == 0) {
                             newRegra.setEstado(true);
-                        }
-                        else{
+                        } else {
                             newRegra.setEstado(false);
                         }
                         newRegra.setIdCasa(idCasa);
@@ -799,7 +856,7 @@ public class Controller {
                         if (oldRegra != null) {
                             String userPerfil = userToken.getPerfil();
                             atualizaCamposRegra(updateReg, oldRegra);
-                            if ((userPerfil.compareToIgnoreCase(    "responsavel") == 0)) {
+                            if ((userPerfil.compareToIgnoreCase("responsavel") == 0)) {
                                 updateReg.setEstado(true);
                             } else {
                                 updateReg.setEstado(false);
@@ -854,7 +911,7 @@ public class Controller {
         if (newTarefa.getNome() != null) count++;
         if (newTarefa.getDescricao() != null) count++;
         if (newTarefa.getData() != null) count++;
-        //if (newTarefa.getValor()!=0) count++;
+        if (newTarefa.getValor()!= 0) count++;
         //if (newTarefa.getIdRelator() != null) count++;
         if (newTarefa.getIdResponsavel() != null) count++;
         if (newTarefa.getEstado() != null) count++;
@@ -889,15 +946,13 @@ public class Controller {
         return count;
     }
 
-    int verificaCamposP(Pagamento newPagamento) {
-        int count = 0;
-        //ve se ele preencheu todas as paradas
-        if (newPagamento.getData() != null) count++;
-        if (newPagamento.getIdCredor().length() != 0) count++;
-        if (newPagamento.getIdDevedor().length() != 0) count++;
-
-        return count;
-    }
+//    int verificaCamposP(Pagamento newPagamento) {
+//        int count = 0;
+//        //ve se ele preencheu todas as paradas
+//        if (newPagamento.getData() != null) count++;
+//        if (!newPagamento.isPago())
+//        return count;
+//    }
 
     int verificaCamposRules(Regra newRegra) {
         int count = 0;
@@ -917,15 +972,52 @@ public class Controller {
         if (updateCasa.getNome() == null) updateCasa.setNome(oldCasa.getNome());
     }
 
-    void atualizaCamposTarefa(Tarefa updateTarefa, Tarefa oldTarefa) {
-        if (updateTarefa.getData() == null) updateTarefa.setData(oldTarefa.getData());
-        if (updateTarefa.getIdResponsavel() == null)
+    void atualizaCamposTarefa(Tarefa updateTarefa, Tarefa oldTarefa, Usuario userToken) {
+        String idResponsavel = updateTarefa.getIdResponsavel();
+        if(idResponsavel != null){
+            if(idResponsavel.compareToIgnoreCase(oldTarefa.getIdResponsavel()) != 0){
+                Usuario userOld = user.buscaUsuario(oldTarefa.getIdResponsavel());
+                int totalTarefasUserOld = userOld.getTotalTarefas();
+                Usuario userNew = user.buscaUsuario(idResponsavel);
+                int totalTarefasUserNew = userOld.getTotalTarefas();
+                totalTarefasUserOld--;
+                if(totalTarefasUserOld < 0){
+                    totalTarefasUserOld = 0;
+                }
+                totalTarefasUserNew++;
+                userNew.setTotalTarefas(totalTarefasUserNew);
+                userOld.setTotalTarefas(totalTarefasUserOld);
+                user.atualizaUsuario(userNew);
+                user.atualizaUsuario(userOld);
+
+                updateTarefa.setIdRelator(userToken.getIdUsuario());
+                updateTarefa.setRepasse(true);
+                if (updateTarefa.getData() == null) updateTarefa.setData(oldTarefa.getData());
+                if (updateTarefa.getDescricao() == null)
+                    updateTarefa.setDescricao(oldTarefa.getDescricao());
+                if (updateTarefa.getEstado() == null) updateTarefa.setEstado(oldTarefa.getEstado());
+                if (updateTarefa.getNome() == null) updateTarefa.setNome(oldTarefa.getNome());
+                if (updateTarefa.getValor() == 0) updateTarefa.setValor(oldTarefa.getValor());
+
+            }
+            else {
+                updateTarefa.setIdRelator(oldTarefa.getIdRelator());
+            }
+        }
+        else{
             updateTarefa.setIdResponsavel(oldTarefa.getIdResponsavel());
-        if (updateTarefa.getDescricao() == null)
-            updateTarefa.setDescricao(oldTarefa.getDescricao());
-        if (updateTarefa.getEstado() == null) updateTarefa.setDescricao(oldTarefa.getEstado());
-        if (updateTarefa.getNome() == null) updateTarefa.setNome(oldTarefa.getNome());
-        if (updateTarefa.getValor() == 0) updateTarefa.setValor(oldTarefa.getValor());
+            updateTarefa.setRepasse(oldTarefa.isRepasse());
+            updateTarefa.setIdRelator(oldTarefa.getIdRelator());
+            if (updateTarefa.getData() == null) updateTarefa.setData(oldTarefa.getData());
+            if (updateTarefa.getDescricao() == null)
+                updateTarefa.setDescricao(oldTarefa.getDescricao());
+            if (updateTarefa.getEstado() == null) updateTarefa.setEstado(oldTarefa.getEstado());
+            if (updateTarefa.getNome() == null) updateTarefa.setNome(oldTarefa.getNome());
+            if (updateTarefa.getValor() == 0) updateTarefa.setValor(oldTarefa.getValor());
+        }
+
+
+
     }
 
     void atualizaCamposComentario(Comentario updateComentario, Comentario oldComentario) {
@@ -942,6 +1034,19 @@ public class Controller {
         if (updateReg.getDescricao() == null) updateReg.setDescricao(oldRegra.getDescricao());
         if (updateReg.getNome() == null) updateReg.setNome(oldRegra.getNome());
         if (updateReg.getValor() == 0) updateReg.setValor(oldRegra.getValor());
+    }
+
+    void atualizaCamposPagamento(Pagamento updatePag, Pagamento oldPag){
+        if (updatePag.getDescricao() == null) updatePag.setDescricao(oldPag.getDescricao());
+        if (updatePag.getJuros() == 0) updatePag.setJuros(oldPag.getJuros());
+        if (updatePag.getValor() == 0) updatePag.setValor(oldPag.getValor());
+        updatePag.setIdCredor(oldPag.getIdCredor());
+        updatePag.setIdDevedor(oldPag.getIdDevedor());
+        Calendar c = Calendar.getInstance();
+        Date date = c.getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        String data = sdf.format(date);
+        updatePag.setData(data);
     }
 
     public String getToken(String credentials) {

@@ -11,9 +11,10 @@ public class Tarefa {
 	private String idRelator;
 	private String estado;
 	private String data;
-	private int valor;
+	private float valor;
+	private boolean repasse;
 
-	public Tarefa(int idTarefa, String nome, String descricao, String idResponsavel, String idRelator, String estado, String data, int valor) {
+	public Tarefa(int idTarefa, String nome, String descricao, String idResponsavel, String idRelator, String estado, String data, float valor, boolean repasse) {
 		this.idTarefa = idTarefa;
 		this.nome = nome;
 		this.descricao = descricao;
@@ -22,12 +23,13 @@ public class Tarefa {
 		this.estado = estado;
 		this.data = data;
 		this.valor = valor;
+		this.repasse = repasse;
 	}
 
     public Tarefa() {
     }
 
-    public Tarefa(String nome, String descricao, String idResponsavel, String idRelator, String estado, String data, int valor) {
+    public Tarefa(String nome, String descricao, String idResponsavel, String idRelator, String estado, String data, float valor) {
 		this.nome = nome;
 		this.descricao = descricao;
 		this.idResponsavel = idResponsavel;
@@ -37,11 +39,19 @@ public class Tarefa {
 		this.valor = valor;
 	}
 
-	public int getValor() {
+	public boolean isRepasse() {
+		return repasse;
+	}
+
+	public void setRepasse(boolean repasse) {
+		this.repasse = repasse;
+	}
+
+	public float getValor() {
 		return valor;
 	}
 
-	public void setValor(int valor) {
+	public void setValor(float valor) {
 		this.valor = valor;
 	}
 

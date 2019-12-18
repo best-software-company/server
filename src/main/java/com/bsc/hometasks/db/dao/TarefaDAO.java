@@ -25,7 +25,7 @@ public class TarefaDAO {
 			stmt.setString(1, tarefa.getNome());
 			stmt.setString(2, tarefa.getDescricao());
 			stmt.setString(3, tarefa.getData());
-			stmt.setInt(4, tarefa.getValor());
+			stmt.setFloat(4, tarefa.getValor());
 			stmt.setString(5, tarefa.getIdRelator());
 			stmt.setString(6, tarefa.getIdResponsavel());
 			stmt.setString(7, tarefa.getEstado());
@@ -46,7 +46,7 @@ public class TarefaDAO {
 
 	public int atualizaTarefa(Tarefa tarefa) {
 		String sql = "update Tarefa set nome = ?, descricao = ?, data = ?, valor = ?,idRelator = ?," +
-				"idResponsavel = ?, estado = ? where idTarefa = ?";
+				"idResponsavel = ?, estado = ?, repasse = ? where idTarefa = ?";
 		int rows = 0;
 		try (Connection conexao = ConnectionFactory.getDBConnection();
 			 PreparedStatement stmt = conexao.prepareStatement(sql)) {
@@ -54,11 +54,12 @@ public class TarefaDAO {
 			stmt.setString(1, tarefa.getNome());
 			stmt.setString(2, tarefa.getDescricao());
 			stmt.setString(3, tarefa.getData());
-			stmt.setInt(4, tarefa.getValor());
+			stmt.setFloat(4, tarefa.getValor());
 			stmt.setString(5, tarefa.getIdRelator());
 			stmt.setString(6, tarefa.getIdResponsavel());
 			stmt.setString(7, tarefa.getEstado());
-			stmt.setInt(8, tarefa.getIdTarefa());
+            stmt.setBoolean(8, tarefa.isRepasse());
+			stmt.setInt(9, tarefa.getIdTarefa());
 			rows = stmt.executeUpdate();
 
 		} catch (SQLException ex) {
@@ -85,7 +86,8 @@ public class TarefaDAO {
 							rs.getString("idRelator"),
 							rs.getString("estado"),
 							rs.getString("data"),
-							rs.getInt("valor"));
+							rs.getFloat("valor"),
+                            rs.getBoolean("repasse"));
 				}
 
 				rs.close();
@@ -132,7 +134,8 @@ public class TarefaDAO {
 						rs.getString("idRelator"),
 						rs.getString("estado"),
 						rs.getString("data"),
-						rs.getInt("valor")));
+						rs.getFloat("valor"),
+                        rs.getBoolean("repasse")));
 			}
 
 			rs.close();
@@ -182,7 +185,8 @@ public class TarefaDAO {
                         rs.getString("idRelator"),
                         rs.getString("estado"),
                         rs.getString("data"),
-                        rs.getInt("valor")));
+                        rs.getFloat("valor"),
+                        rs.getBoolean("repasse")));
             }
 
             rs.close();

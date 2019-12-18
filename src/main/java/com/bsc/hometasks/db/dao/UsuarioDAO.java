@@ -45,10 +45,12 @@ public class UsuarioDAO {
 		String sql;
 		if (usuario.getIdCasa() >0){
 			sql = "update Usuario set data = ?, genero = ?, pontos = ?, perfil = ?, nome = ?," +
-					"telefone = ?, senha = ?, email = ?, idCasa = ?, foto = ?, token = ? where idUsuario = ?";
+					"telefone = ?, senha = ?, email = ?, idCasa = ?, foto = ?, " +
+					"token = ?, total_tarefas = ?, tarefas_avaliadas = ?  where idUsuario = ?";
 		}else {
 			sql = "update Usuario set data = ?, genero = ?, pontos = ?, perfil = ?, nome = ?," +
-					"telefone = ?, senha = ?, email = ?, foto = ?, token = ? where idUsuario = ?";
+					"telefone = ?, senha = ?, email = ?, foto = ?, " +
+					"token = ?, total_tarefas = ?, tarefas_avaliadas = ?  where idUsuario = ?";
 		}
 		int rows = 0;
 		try (Connection conexao = ConnectionFactory.getDBConnection();
@@ -66,12 +68,16 @@ public class UsuarioDAO {
 				stmt.setInt(9,usuario.getIdCasa());
 				stmt.setBlob(10,usuario.getFoto());
 				stmt.setString(11, usuario.getToken());
-				stmt.setString(12, usuario.getIdUsuario());
+				stmt.setInt(12, usuario.getTotalTarefas());
+				stmt.setInt(13, usuario.getTarefasAvaliadas());
+				stmt.setString(14, usuario.getIdUsuario());
 
 			}else {
 				stmt.setBlob(9,usuario.getFoto());
 				stmt.setString(10, usuario.getToken());
-				stmt.setString(11, usuario.getIdUsuario());
+				stmt.setInt(11, usuario.getTotalTarefas());
+				stmt.setInt(12, usuario.getTarefasAvaliadas());
+				stmt.setString(13, usuario.getIdUsuario());
 
 			}
 
@@ -107,7 +113,9 @@ public class UsuarioDAO {
 						rs.getString("perfil"),
 						rs.getInt("idCasa"),
 						rs.getBlob("foto"),
-						rs.getString("token"));
+						rs.getString("token"),
+						rs.getInt("total_tarefas"),
+						rs.getInt("tarefas_avaliadas"));
 			}
 
 			stmt.close();
@@ -155,7 +163,9 @@ public class UsuarioDAO {
 						rs.getString("perfil"),
 						rs.getInt("idCasa"),
 						rs.getBlob("foto"),
-						rs.getString("token")));
+						rs.getString("token"),
+						rs.getInt("total_tarefas"),
+						rs.getInt("tarefas_avaliadas")));
 
 			}
 		} catch (SQLException ex) {
@@ -184,7 +194,9 @@ public class UsuarioDAO {
 						rs.getString("perfil"),
 						rs.getInt("idCasa"),
 						rs.getBlob("foto"),
-						rs.getString("token")));
+						rs.getString("token"),
+						rs.getInt("total_tarefas"),
+						rs.getInt("tarefas_avaliadas")));
 			}
 
 		} catch (SQLException ex) {
@@ -217,7 +229,9 @@ public class UsuarioDAO {
 						rs.getString("perfil"),
 						rs.getInt("idCasa"),
 						rs.getBlob("foto"),
-						rs.getString("token"));
+						rs.getString("token"),
+						rs.getInt("total_tarefas"),
+						rs.getInt("tarefas_avaliadas"));
 			}
 
 			stmt.close();
@@ -249,7 +263,9 @@ public class UsuarioDAO {
 						rs.getString("perfil"),
 						rs.getInt("idCasa"),
 						rs.getBlob("foto"),
-						rs.getString("token")));
+						rs.getString("token"),
+						rs.getInt("total_tarefas"),
+						rs.getInt("tarefas_avaliadas")));
 			}
 
 		} catch (SQLException ex) {

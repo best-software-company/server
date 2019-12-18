@@ -18,12 +18,16 @@ public class Usuario {
 	private int idCasa;
 	private Blob foto;
 	private String token;
+	private int totalTarefas;
+	private int tarefasAvaliadas;
 
 	public Usuario() {
 	}
 
 
-	public Usuario(String idUsuario, String nome, String data, String genero, int pontos, String telefone, String senha, String email, String perfil, int idCasa, Blob foto, String token) {
+	public Usuario(String idUsuario, String nome, String data,
+				   String genero, int pontos, String telefone, String senha, String email,
+				   String perfil, int idCasa, Blob foto, String token, int totalTarefas, int tarefasAvaliadas) {
 		this.idUsuario = idUsuario;
 		this.nome = nome;
 		this.data = data;
@@ -36,6 +40,9 @@ public class Usuario {
 		this.idCasa = idCasa;
 		this.foto = foto;
 		this.token = token;
+		this.totalTarefas = totalTarefas;
+		this.tarefasAvaliadas = tarefasAvaliadas;
+
 	}
 
 	public Usuario(String nome, String data, String genero, int pontos, String telefone, String senha, String email, String perfil) {
@@ -143,6 +150,22 @@ public class Usuario {
 
 	public void setToken(String token) {
 		this.token = token;
+	}
+
+	public int getTotalTarefas() {
+		return totalTarefas;
+	}
+
+	public void setTotalTarefas(int totalTarefas) {
+		this.totalTarefas = totalTarefas;
+	}
+
+	public int getTarefasAvaliadas() {
+		return tarefasAvaliadas;
+	}
+
+	public void setTarefasAvaliadas(int tarefasAvaliadas) {
+		this.tarefasAvaliadas = tarefasAvaliadas;
 	}
 
 	@Override
